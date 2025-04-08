@@ -10,7 +10,7 @@
 /* REQUIREMENT
  GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
  This value limits the size of global schedule.
- 13 bits gives a possible schedule length of 8192 */
+*/
 #ifndef GTTCAN_NUM_SLOT_ID_BITS
 #define GTTCAN_NUM_SLOT_ID_BITS 13
 #endif
@@ -18,14 +18,6 @@
 /* REQUIREMENT
  GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
  This value limits the number of whiteboard entries.
- 16 bits gives a possible whiteboard length of 65536
- At 8 byte entries, this gives a whiteboard with total
- storage of 512kB.
- 
- ????
- max 128kB whiteboard possible IF schedule length must be greater than whiteboard length???
- ie if a slot is needed to populate an entry into the whiteboard
- ????
  */
 #ifndef GTTCAN_NUM_DATA_ID_BITS
 #define GTTCAN_NUM_DATA_ID_BITS 16
@@ -35,10 +27,10 @@
 
 // Consider making this into masked 29 bit CAN Frame IDs from start, but this struct is more readable
 // I think NUM_SLOT_ID_BITS and NUM_DATA_ID_BITS could be up to the end user, but is there any point???
-typedef struct local_schedule_entry_tag {
+typedef struct local_schedule_entry_tag { // According to claude has no memory overhead vs a uint32_t, but will be one more operation when it comes time to transmit a frame
     uint16_t slot_id; // could be as large as GTTCAN_MAX_GLOBAL_SCHEDULE_LENGTH
     uint16_t data_id; // could be as large as the size of the whiteboard
-} local_schedule_entry_t;
+} local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function 
 
 typedef struct gttcan_tag {
     uint8_t node_id;
@@ -47,8 +39,12 @@ typedef struct gttcan_tag {
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
     uint16_t global_schedule_length;
     uint8_t local_schedule_length;
+    uint8_t local_schedule_index;
     uint32_t slot_duration;
 
+
+
+    1      1      1      1 111         11111111111111                  1
 
 
 
