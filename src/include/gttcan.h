@@ -54,7 +54,6 @@ void gttcan_init(
     gttcan_t *gttcan,
     uint8_t node_id,
     uint16_t global_schedule_length,
-    uint8_t local_schedule_length,
     uint32_t slot_duration,
     transmit_frame_callback_fp_t transmit_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp
