@@ -44,12 +44,6 @@ typedef struct gttcan_tag {
 
 
 
-    1      1      1      1 111         11111111111111                  1
-
-
-
-
-
 } gttcan_t;
 
 
