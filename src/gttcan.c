@@ -23,7 +23,7 @@ void gttcan_init(
     gttcan->transmit_frame_callback_fp = transmit_callback_fp;
     gttcan->set_timer_int_callback_fp = set_timer_int_callback_fp;
 
-    gttcan->local_schedule_index;
+    gttcan->local_schedule_index = 0;
 
     gttcan->local_schedule[0].slot_id = 0;
     gttcan->local_schedule[0].data_id = REFERENCE_FRAME_DATA_ID;
