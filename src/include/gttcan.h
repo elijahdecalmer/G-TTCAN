@@ -62,3 +62,5 @@ void gttcan_init(
 void gttcan_start(
     gttcan_t *gttcan
 );
+
+void gttcan_transmit_next_frame(gttcan_t * gttcan);
