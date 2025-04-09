@@ -37,26 +37,26 @@ void gttcan_init(
     gttcan->local_schedule[3].slot_id = 3;
     gttcan->local_schedule[3].data_id = GENERIC_DATA_ID;
 
-    gttcan->local_schedule[5].slot_id = 5;
+    gttcan->local_schedule[4].slot_id = 5;
+    gttcan->local_schedule[4].data_id = GENERIC_DATA_ID;
+
+    gttcan->local_schedule[5].slot_id = 8;
     gttcan->local_schedule[5].data_id = GENERIC_DATA_ID;
 
-    gttcan->local_schedule[8].slot_id = 8;
+    gttcan->local_schedule[6].slot_id = 13;
+    gttcan->local_schedule[6].data_id = GENERIC_DATA_ID;
+
+    gttcan->local_schedule[7].slot_id = 21;
+    gttcan->local_schedule[7].data_id = GENERIC_DATA_ID;
+
+    gttcan->local_schedule[8].slot_id = 34;
     gttcan->local_schedule[8].data_id = GENERIC_DATA_ID;
 
-    gttcan->local_schedule[13].slot_id = 13;
-    gttcan->local_schedule[13].data_id = GENERIC_DATA_ID;
+    gttcan->local_schedule[9].slot_id = 55;
+    gttcan->local_schedule[9].data_id = GENERIC_DATA_ID;
 
-    gttcan->local_schedule[21].slot_id = 21;
-    gttcan->local_schedule[21].data_id = GENERIC_DATA_ID;
-
-    gttcan->local_schedule[34].slot_id = 34;
-    gttcan->local_schedule[34].data_id = GENERIC_DATA_ID;
-
-    gttcan->local_schedule[55].slot_id = 55;
-    gttcan->local_schedule[55].data_id = GENERIC_DATA_ID;
-
-    gttcan->local_schedule[89].slot_id = 89;
-    gttcan->local_schedule[89].data_id = GENERIC_DATA_ID;
+    gttcan->local_schedule[10].slot_id = 89;
+    gttcan->local_schedule[10].data_id = GENERIC_DATA_ID;
 
     gttcan->local_schedule_length = 11;
 
