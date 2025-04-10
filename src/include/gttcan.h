@@ -64,3 +64,5 @@ void gttcan_start(
 );
 
 void gttcan_transmit_next_frame(gttcan_t * gttcan);
+
+uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t next_slot_id, uint16_t global_schedule_length);

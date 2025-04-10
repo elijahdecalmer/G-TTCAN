@@ -89,13 +89,6 @@ void gttcan_transmit_next_frame(gttcan_t * gttcan)
 
     ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
 
-
-
-
-
-
-
-
     gttcan->local_schedule_index++;
     if (gttcan->local_schedule_index >= gttcan->local_schedule_length){ // TODO MAKE THIS A == ONCE THAT CAN BE ENSURED IS SAFE
         gttcan->local_schedule_index = 0;
@@ -103,13 +96,7 @@ void gttcan_transmit_next_frame(gttcan_t * gttcan)
 
     uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
 
-    uint16_t number_of_slots_to_next; // TODO CHECK THAT THIS IS LESS THAN MAX GLOBAL SCHEDULE LENGTH
-
-    if (slot_id < next_slot_id){
-        number_of_slots_to_next = next_slot_id - slot_id;
-    } else {
-        number_of_slots_to_next = gttcan->global_schedule_length - slot_id + next_slot_id;
-    }
+    uint16_t number_of_slots_to_next =  gttcan_get_number_of_slots_to_next(slot_id,next_slot_id,gttcan->global_schedule_length);
 
 
     uint32_t time_to_next_transmission = number_of_slots_to_next * gttcan->slot_duration;
@@ -134,4 +121,13 @@ void gttcan_start(
     gttcan_transmit_next_frame(gttcan);
 
 
+}
+
+
+uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t next_slot_id, uint16_t global_schedule_length){
+    if (current_slot_id < next_slot_id){
+        return next_slot_id - current_slot_id;
+    } else {
+        return global_schedule_length - current_slot_id + next_slot_id;
+    }
 }
