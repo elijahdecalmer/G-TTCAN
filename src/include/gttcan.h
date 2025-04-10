@@ -55,7 +55,7 @@ void gttcan_init(
     uint8_t node_id,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
-    transmit_frame_callback_fp_t transmit_callback_fp,
+    transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp
 );
 

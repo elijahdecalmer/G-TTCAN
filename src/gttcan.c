@@ -12,7 +12,7 @@ void gttcan_init(
     uint8_t node_id,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
-    transmit_frame_callback_fp_t transmit_callback_fp,
+    transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp
 )
 {
@@ -20,7 +20,7 @@ void gttcan_init(
     gttcan->global_schedule_length = global_schedule_length;
     gttcan->slot_duration = slot_duration;
 
-    gttcan->transmit_frame_callback_fp = transmit_callback_fp;
+    gttcan->transmit_frame_callback_fp = transmit_frame_callback_fp;
     gttcan->set_timer_int_callback_fp = set_timer_int_callback_fp;
 
     gttcan->local_schedule_index = 0;
@@ -68,7 +68,7 @@ void gttcan_init(
 // Transmit frame (blink a blinky LED )
     // increment local_schedule_index
     // look at my schedule, set time to next transmit
-    // typedef void (*transmit_callback_fp)(uint32_t, uint64_t);
+    // typedef void (*transmit_frame_callback_fp)(uint32_t, uint64_t);
 
 
 
