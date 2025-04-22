@@ -98,3 +98,6 @@ uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t n
 
 
 uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t *gttcan);
+
+
+void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data);

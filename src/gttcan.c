@@ -114,20 +114,37 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 {
     uint16_t slot_id = (can_frame_id >> 16) & 0xFFFF;
     uint16_t data_id = can_frame_id & 0xFFFF;
-
-    // sync up with current progress on global schedule
-    // uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
-    // while(slot_id > next_slot_id){
-    //     gttcan->local_schedule_index++;
-    //     next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
-    // }
-
+    
     // TODO: add error checks
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
-        // Reset clock drift
-        // uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan);
-        // gttcan->set_timer_int_callback_fp(time_to_next_transmission);
+        // 1) Find first local slot > received slot_id
+        uint16_t i;
+        for (i = 0; i < gttcan->local_schedule_length; i++) {
+            if (gttcan->local_schedule[i].slot_id > slot_id) {
+                break;
+            }
+        }
+        // 2) Wrap if none found
+        if (i == gttcan->local_schedule_length) {
+            i = 0;
+        }
+        // 3) Update index to next transmit
+        gttcan->local_schedule_index = i;
+
+        // 4) Compute slots‑to‑next and delay
+        uint16_t next_slot = gttcan->local_schedule[i].slot_id;
+        uint16_t slots_ahead = gttcan_get_number_of_slots_to_next(
+            slot_id,
+            next_slot,
+            gttcan->global_schedule_length
+        );
+        uint32_t delay = (uint32_t)slots_ahead * gttcan->slot_duration;
+
+        // 5) Re‑arm timer for exactly that delay
+        gttcan->set_timer_int_callback_fp(delay);
+
+        return;
     }
     else
     {
