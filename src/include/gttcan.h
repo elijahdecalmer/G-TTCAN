@@ -51,6 +51,8 @@ typedef global_schedule_entry_t* global_schedule_ptr_t;
 
 typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
+typedef uint64_t (*read_value_fp_t)(uint16_t);
+typedef void (*write_value_fp_t)(uint16_t, uint64_t);
 
 typedef struct gttcan_tag {
     uint8_t node_id;
@@ -66,6 +68,8 @@ typedef struct gttcan_tag {
     // Callback functions
     transmit_frame_callback_fp_t transmit_frame_callback_fp;
     set_timer_int_callback_fp_t set_timer_int_callback_fp;
+    read_value_fp_t read_value_fp;
+    write_value_fp_t write_value_fp;
 
 
 } gttcan_t;
@@ -77,7 +81,9 @@ void gttcan_init(
     uint16_t global_schedule_length,
     uint32_t slot_duration,
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
-    set_timer_int_callback_fp_t set_timer_int_callback_fp
+    set_timer_int_callback_fp_t set_timer_int_callback_fp,
+    read_value_fp_t read_value_fp,
+    write_value_fp_t write_value_fp
 );
 
 void gttcan_start(
@@ -89,3 +95,6 @@ void gttcan_transmit_next_frame(gttcan_t * gttcan);
 void gttcan_get_local_schedule(gttcan_t * gttcan, global_schedule_ptr_t global_schedule_ptr);
 
 uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t next_slot_id, uint16_t global_schedule_length);
+
+
+uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t *gttcan);
