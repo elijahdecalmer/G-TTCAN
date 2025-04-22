@@ -126,7 +126,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             }
         }
         // 2) Wrap if none found
-        if (i == gttcan->local_schedule_length) {
+        if (i == gttcan->local_schedule_length - 1) { // TODO CHECK THIS MODIFICATION TO -1 !!!!!!
             i = 0;
         }
         // 3) Update index to next transmit
