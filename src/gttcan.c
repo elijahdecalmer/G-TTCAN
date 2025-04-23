@@ -112,7 +112,7 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
 {
-    uint16_t slot_id = (can_frame_id >> 16) & 0xFFFF;
+    uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
     uint16_t data_id = can_frame_id & 0xFFFF;
     
     // TODO: add error checks
@@ -126,7 +126,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             }
         }
         // 2) Wrap if none found
-        if (i == gttcan->local_schedule_length - 1) { // TODO CHECK THIS MODIFICATION TO -1 !!!!!!
+        if (i == gttcan->local_schedule_length) { // TODO CHECK THIS MODIFICATION TO -1 !!!!!!
             i = 0;
         }
         // 3) Update index to next transmit
