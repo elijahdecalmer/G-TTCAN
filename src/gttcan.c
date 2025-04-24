@@ -15,6 +15,7 @@ void gttcan_init(
     read_value_fp_t read_value_fp,
     write_value_fp_t write_value_fp)
 {
+    gttcan->isActive = false;
     gttcan->node_id = node_id;
     gttcan->global_schedule_length = global_schedule_length;
     gttcan->slot_duration = slot_duration;
@@ -26,6 +27,9 @@ void gttcan_init(
     gttcan->set_timer_int_callback_fp = set_timer_int_callback_fp;
     gttcan->read_value_fp = read_value_fp;
     gttcan->write_value_fp = write_value_fp;
+
+    gttcan->hardware_time = 0;
+    gttcan->last_reference_frame_hardware_time = 0;
 }
 
 // Transmit frame (blink a blinky LED )
@@ -38,8 +42,23 @@ void gttcan_init(
 // REMOVE CONTEXT PTR FROM params
 // borrow the implementation of this function
 
+
+
+// GTTCAN Start (master only function?)
+// start schedule, call transmitFrame (blink an LED) to symbolise sending a reference frame
+void gttcan_start(
+    gttcan_t *gttcan)
+{
+    gttcan->isActive = true;
+    gttcan->local_schedule_index = 0;
+    gttcan_transmit_next_frame(gttcan);
+}
+
 void gttcan_transmit_next_frame(gttcan_t *gttcan)
 {
+    if(!gttcan->isActive){
+        return;
+    }
 
     uint32_t ext_frame_header;
 
@@ -54,26 +73,52 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         gttcan->local_schedule_index = 0;
     }
 
-    uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
-
-    uint16_t number_of_slots_to_next =  gttcan_get_number_of_slots_to_next(slot_id,next_slot_id,gttcan->global_schedule_length);
-
-
-    uint32_t time_to_next_transmission = number_of_slots_to_next * gttcan->slot_duration;
+    uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan);
 
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
-    gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)0);
+    gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)gttcan->node_id);
 }
 
-// GTTCAN Start (master only function?)
-// start schedule, call transmitFrame (blink an LED) to symbolise sending a reference frame
-void gttcan_start(
-    gttcan_t *gttcan)
+
+
+void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
 {
-    gttcan->local_schedule_index = 0;
-    gttcan_transmit_next_frame(gttcan);
+    uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
+    uint16_t data_id = can_frame_id & 0xFFFF;
+    
+    if (!gttcan->isActive && slot_id == 0) {
+        gttcan->isActive = true;
+        // uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan); //offset correction
+        // gttcan->set_timer_int_callback_fp(time_to_next_transmission);
+    }
+
+    if(data_id == REFERENCE_FRAME_DATA_ID){
+        //gttcan->transmit_frame_callback_fp(3,7979);
+        uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan); //offset correction
+        gttcan->set_timer_int_callback_fp(time_to_next_transmission);
+
+        // uint16_t slots_since_last_reference_frame = slot_id - gttcan->last_reference_frame_slot_id;
+        // uint32_t expected_time_elapsed = (uint32_t)slots_since_last_reference_frame * gttcan->slot_duration;
+        // uint32_t actual_time_elapsed = gttcan->last_reference_frame_hardware_time - gttcan->hardware_time;
+        // int32_t time_difference = expected_time_elapsed - actual_time_elapsed;
+        // uint32_t new_slot_duration = actual_time_elapsed / slots_since_last_reference_frame; //TODO: add a dampener
+
+        // uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan) + time_difference; //offset correction
+        // gttcan->set_timer_int_callback_fp(time_to_next_transmission);
+
+        // gttcan->last_reference_frame_hardware_time = gttcan->hardware_time;
+        // gttcan->last_reference_frame_slot_id = slot_id;
+    }
+    // else
+    // {
+    //     // Write data using user defined functions
+    //     // [data_id data]
+    //     gttcan->write_value_fp(data_id, data);
+    // }
+    // future per frame clock correction functionalities maybe
 }
+
 
 void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_schedule_ptr)
 {
@@ -110,47 +155,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     return (uint32_t) number_of_slots_to_next * gttcan->slot_duration;
 }
 
-void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
-{
-    uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
-    uint16_t data_id = can_frame_id & 0xFFFF;
-    
-    // TODO: add error checks
-    if (data_id == REFERENCE_FRAME_DATA_ID)
-    {
-        // 1) Find first local slot > received slot_id
-        uint16_t i;
-        for (i = 0; i < gttcan->local_schedule_length; i++) {
-            if (gttcan->local_schedule[i].slot_id > slot_id) {
-                break;
-            }
-        }
-        // 2) Wrap if none found
-        if (i == gttcan->local_schedule_length) { // TODO CHECK THIS MODIFICATION TO -1 !!!!!!
-            i = 0;
-        }
-        // 3) Update index to next transmit
-        gttcan->local_schedule_index = i;
-
-        // 4) Compute slots‑to‑next and delay
-        uint16_t next_slot = gttcan->local_schedule[i].slot_id;
-        uint16_t slots_ahead = gttcan_get_number_of_slots_to_next(
-            slot_id,
-            next_slot,
-            gttcan->global_schedule_length
-        );
-        uint32_t delay = (uint32_t)slots_ahead * gttcan->slot_duration;
-
-        // 5) Re‑arm timer for exactly that delay
-        gttcan->set_timer_int_callback_fp(delay);
-
-        return;
-    }
-    else
-    {
-        // Write data using user defined functions
-        // [data_id data]
-        gttcan->write_value_fp(data_id, data);
-    }
-    // future per frame clock correction functionalities maybe
+void gttcan_set_hardware_time(gttcan_t *gttcan, uint32_t hardware_time){
+    gttcan->hardware_time += hardware_time;
 }

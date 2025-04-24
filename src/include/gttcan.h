@@ -1,5 +1,5 @@
 #include <stdint.h>
-
+#include <stdbool.h>
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
@@ -56,7 +56,7 @@ typedef void (*write_value_fp_t)(uint16_t, uint64_t);
 
 typedef struct gttcan_tag {
     uint8_t node_id;
-
+    bool isActive;
     // Schedule related
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
     // global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
@@ -71,6 +71,10 @@ typedef struct gttcan_tag {
     read_value_fp_t read_value_fp;
     write_value_fp_t write_value_fp;
 
+    // Timing related
+    uint32_t hardware_time;
+    uint16_t last_reference_frame_slot_id;
+    uint32_t last_reference_frame_hardware_time;
 
 } gttcan_t;
 
@@ -101,3 +105,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
 
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data);
+
+
+void gttcan_set_hardware_time(gttcan_t *gttcan,uint32_t hardware_time);
