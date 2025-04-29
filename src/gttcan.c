@@ -93,6 +93,24 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
         int32_t time_difference = 0;
+
+        // NEW CODE START HERE!!!!!!!!!!
+        int found_next_index = -1;
+        // find the first local schedule entry where its slot_id > ref slot_id
+        for (int i = 0; i < gttcan->local_schedule_length; i++){
+            if (gttcan->local_schedule[i].slot_id > slot_id){
+                gttcan->local_schedule_index = i;
+                found_next_index = 1;
+                break;
+            }
+        }
+
+        if (found_next_index < 0){
+            gttcan->local_schedule_index = 0;
+        }
+        // NEW CODE END HERE!!!!!!!!!!!
+
+
         // uint32_t expected_time_elapsed = (uint32_t)gttcan->global_schedule_length * gttcan->slot_duration;
         // if(gttcan->last_reference_frame_hardware_time > 0){ // If a reference frame time has been recorded
         //     uint32_t actual_time_elapsed = gttcan->last_reference_frame_hardware_time - gttcan->hardware_time;
