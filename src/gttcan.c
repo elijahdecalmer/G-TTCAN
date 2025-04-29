@@ -59,12 +59,9 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         return;
     }
 
-    uint32_t ext_frame_header;
-
     uint16_t slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t data_id = gttcan->local_schedule[gttcan->local_schedule_index].data_id;
 
-    ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
 
     gttcan->local_schedule_index++;
     if (gttcan->local_schedule_index >= gttcan->local_schedule_length)
@@ -76,6 +73,8 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
+    uint32_t ext_frame_header;
+    ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
     gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)gttcan->node_id);
 }
 
