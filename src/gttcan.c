@@ -99,14 +99,18 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         // find the first local schedule entry where its slot_id > ref slot_id
         for (int i = 0; i < gttcan->local_schedule_length; i++){
             if (gttcan->local_schedule[i].slot_id > slot_id){
-                gttcan->local_schedule_index = i;
+                if (i == 0){
+                    gttcan->local_schedule_index = gttcan->local_schedule_length;
+                }else {
+                    gttcan->local_schedule_index = i-1;
+                }
                 found_next_index = 1;
                 break;
             }
         }
 
         if (found_next_index < 0){
-            gttcan->local_schedule_index = 0;
+            gttcan->local_schedule_index = gttcan->local_schedule_length;
         }
         // NEW CODE END HERE!!!!!!!!!!!
 
