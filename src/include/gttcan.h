@@ -72,6 +72,10 @@ typedef struct gttcan_tag
     uint16_t last_reference_frame_slot_id;
     uint32_t last_reference_frame_hardware_time;
 
+    // Time master hierarchy related
+    bool isTimeMaster;
+    uint8_t current_time_master_node_id;
+
 } gttcan_t;
 
 void gttcan_init(
