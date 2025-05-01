@@ -69,6 +69,9 @@ typedef struct gttcan_tag
     write_value_fp_t write_value_fp;
     get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp;
 
+    // Last frame on bus
+    uint16_t last_frame_on_bus;
+
     // Timing related
     uint32_t last_schedule_transmission_time;
 
