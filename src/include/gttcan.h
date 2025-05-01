@@ -3,7 +3,7 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 200
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 150
 #endif
 
 /* REQUIREMENT
@@ -33,7 +33,7 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 200 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 150 // check if number is ok and ifndef
 
 typedef struct global_schedule_entry
 {
