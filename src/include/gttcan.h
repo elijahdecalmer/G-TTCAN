@@ -48,6 +48,7 @@ typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
 typedef uint64_t (*read_value_fp_t)(uint16_t);
 typedef void (*write_value_fp_t)(uint16_t, uint64_t);
+typedef uint32_t(*get_schedule_transmission_time_fp_t)(void);
 
 typedef struct gttcan_tag
 {
@@ -66,11 +67,10 @@ typedef struct gttcan_tag
     set_timer_int_callback_fp_t set_timer_int_callback_fp;
     read_value_fp_t read_value_fp;
     write_value_fp_t write_value_fp;
+    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp;
 
     // Timing related
-    uint32_t hardware_time;
-    uint16_t last_reference_frame_slot_id;
-    uint32_t last_reference_frame_hardware_time;
+    uint32_t last_schedule_transmission_time;
 
 } gttcan_t;
 
@@ -83,7 +83,9 @@ void gttcan_init(
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp);
+    write_value_fp_t write_value_fp,
+    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp
+);
 
 void gttcan_start(
     gttcan_t *gttcan);

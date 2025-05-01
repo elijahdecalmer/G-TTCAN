@@ -13,7 +13,8 @@ void gttcan_init(
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp)
+    write_value_fp_t write_value_fp,
+    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp)
 {
     gttcan->isActive = false;
     gttcan->node_id = node_id;
@@ -27,9 +28,11 @@ void gttcan_init(
     gttcan->set_timer_int_callback_fp = set_timer_int_callback_fp;
     gttcan->read_value_fp = read_value_fp;
     gttcan->write_value_fp = write_value_fp;
+    gttcan->get_schedule_transmission_time_fp = get_schedule_transmission_time_fp;
 
-    gttcan->hardware_time = 0;
-    gttcan->last_reference_frame_hardware_time = 0;
+    // gttcan->hardware_time = 0;
+    // gttcan->last_reference_frame_hardware_time = 0;
+    gttcan->last_schedule_transmission_time = 0;
 }
 
 // Transmit frame (blink a blinky LED )
@@ -75,7 +78,7 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     uint32_t ext_frame_header;
     ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
-    gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)gttcan->node_id);
+    gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)gttcan->last_schedule_transmission_time);
 }
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
@@ -88,6 +91,15 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         gttcan->isActive = true;
         // uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan); //offset correction
         // gttcan->set_timer_int_callback_fp(time_to_next_transmission);
+    }
+
+    if(slot_id == 0){
+        if(gttcan->last_schedule_transmission_time == 0){
+            gttcan->last_schedule_transmission_time = gttcan->get_schedule_transmission_time_fp();
+        }else{
+            //uint32_t expected_time_elapsed = (uint32_t)gttcan->global_schedule_length * gttcan->slot_duration;
+            gttcan->slot_duration = gttcan->last_schedule_transmission_time / (uint32_t)gttcan->global_schedule_length;
+        }
     }
 
     if (data_id == REFERENCE_FRAME_DATA_ID)
@@ -171,11 +183,11 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     return (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
 }
 
-void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
-{
-    gttcan->hardware_time += hardware_time;
-}
+// void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
+// {
+//     gttcan->hardware_time += hardware_time;
+// }
 
-void gttcan_reset_hardware_time(gttcan_t *gttcan){
-    gttcan->hardware_time = 0;
-}
+// void gttcan_reset_hardware_time(gttcan_t *gttcan){
+//     gttcan->hardware_time = 0;
+// }
