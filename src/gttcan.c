@@ -213,3 +213,4 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
 // void gttcan_reset_hardware_time(gttcan_t *gttcan){
 //     gttcan->hardware_time = 0;
 // }
+

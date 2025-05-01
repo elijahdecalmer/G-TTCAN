@@ -1,3 +1,7 @@
+
+#ifndef GTTCAN_H
+#define GTTCAN_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -103,3 +107,5 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time);
 
 void gttcan_reset_hardware_time(gttcan_t *gttcan);
+
+#endif
