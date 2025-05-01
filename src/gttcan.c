@@ -93,7 +93,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         // If received frame is greater than the next one I want to send, and I haven't wrapped, then I am slow
         gttcan->slot_duration--; // SPEED ME UP
     }
-    if (gttcan->local_schedule_index > 0 && slot_id < gttcan->local_schedule[gttcan->local_schedule_index-1].slot_id && gttcan->node_id != 1){
+    if (gttcan->local_schedule_index > 0 && slot_id != 0 && slot_id < gttcan->local_schedule[gttcan->local_schedule_index-1].slot_id && gttcan->node_id != 1){
         // If received frame is less than one I have already transmitted (and I've transmitted already this schedule)
         gttcan->slot_duration++; // SLOW ME DOWN, I TRANSMITTED BEFORE SOMEONE ELSE HAD THE CHANCE, WHICH CAN'T BE POSSIBLE IF I AM AT ZERO
     }
