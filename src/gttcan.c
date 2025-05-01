@@ -29,8 +29,8 @@ void gttcan_init(
     gttcan->read_value_fp = read_value_fp;
     gttcan->write_value_fp = write_value_fp;
 
-    gttcan->hardware_time = 0;
-    gttcan->last_reference_frame_hardware_time = 0;
+    // gttcan->hardware_time = 0;
+    // gttcan->last_reference_frame_hardware_time = 0;
 
     gttcan->current_time_master_node_id = 1;
     gttcan->isTimeMaster = false;
@@ -85,17 +85,13 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         }
     }
 
-    if (!gttcan->isTimeMaster)
-    {
-        gttcan_move_index_to_next_non_reference_frame_slot(gttcan);
-    }
 
     uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id, gttcan);
-
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
-    uint32_t ext_frame_header;
-    ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
+    if(data_id == REFERENCE_FRAME_DATA_ID && !gttcan->isTimeMaster){
+        return;
+    }
     gttcan->transmit_frame_callback_fp(ext_frame_header, (uint64_t)gttcan->node_id);
 }
 
@@ -112,42 +108,34 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         if (gttcan->isTimeMaster)
         {
             gttcan->isTimeMaster = false;
-            gttcan_move_index_to_next_non_reference_frame_slot(gttcan);
             // reset transmission interrupt
-            uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id, gttcan);
-            gttcan->set_timer_int_callback_fp(time_to_next_transmission);
         }
     }
 
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
-        int32_t time_difference = 0;
-
 
         // NEW CODE START HERE!!!!!!!!!!
 
-        if (isReservedTimeMasterDeclarationSlots) {
-            // Hard cycle reset
-            gttcan->local_schedule_index = 0;
-        } else {
-            // For other reference frames, find the correct next position
-            int next_index = -1;
-            
-            // Find the first slot after the current reference frame
-            for (int i = 0; i < gttcan->local_schedule_length; i++) {
-                if (gttcan->local_schedule[i].slot_id > slot_id) {
-                    next_index = i;
-                    break;
-                }
-            }
-            
-            // If no next slot found, wrap around to beginning
-            if (next_index == -1) {
-                gttcan->local_schedule_index = 0;
-            } else {
-                gttcan->local_schedule_index = next_index;
+        int32_t time_difference = 0;
+
+        // NEW CODE START HERE!!!!!!!!!!
+        int found_next_index = -1;
+        // find the first local schedule entry where its slot_id > ref slot_id
+        for (int i = 0; i < gttcan->local_schedule_length; i++) {
+            if (gttcan->local_schedule[i].slot_id > slot_id) {
+                // Found the next slot, position the index at the previous entry
+                gttcan->local_schedule_index = i;
+                found_next_index = 1;
+                break;
             }
         }
+        
+        if (found_next_index < 0) {
+            // No slot is greater than the reference slot - position at the last entry
+            gttcan->local_schedule_index = 0;
+        }
+        
         
         // NEW CODE END HERE!!!!!!!!!!!
 
@@ -212,24 +200,24 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     return (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
 }
 
-void gttcan_move_index_to_next_non_reference_frame_slot(gttcan_t *gttcan)
-{
-    while (gttcan->local_schedule[gttcan->local_schedule_index].data_id == REFERENCE_FRAME_DATA_ID)
-    {
-        gttcan->local_schedule_index++;
-        if (gttcan->local_schedule_index >= gttcan->local_schedule_length)
-        {
-            gttcan->local_schedule_index = 0;
-        }
-    }
-}
+// void gttcan_move_index_to_next_non_reference_frame_slot(gttcan_t *gttcan)
+// {
+//     while (gttcan->local_schedule[gttcan->local_schedule_index].data_id == REFERENCE_FRAME_DATA_ID)
+//     {
+//         gttcan->local_schedule_index++;
+//         if (gttcan->local_schedule_index >= gttcan->local_schedule_length)
+//         {
+//             gttcan->local_schedule_index = 0;
+//         }
+//     }
+// }
 
-void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
-{
-    gttcan->hardware_time += hardware_time;
-}
+// void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
+// {
+//     gttcan->hardware_time += hardware_time;
+// }
 
-void gttcan_reset_hardware_time(gttcan_t *gttcan)
-{
-    gttcan->hardware_time = 0;
-}
+// void gttcan_reset_hardware_time(gttcan_t *gttcan)
+// {
+//     gttcan->hardware_time = 0;
+// }
