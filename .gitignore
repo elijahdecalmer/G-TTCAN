@@ -1,1 +1,20 @@
+# Ignore password file
+src/.scp_password
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output files
 src/output.txt
+src/fetch_check.py
+src/check_schedule.py
+
+# Other common files to ignore
+.DS_Store
+.env
+.venv
+env/
+venv/
+ENV/
