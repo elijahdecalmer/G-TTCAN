@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
+/* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 is this a necessary restriction? */
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
 #define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 1000
 #endif
@@ -26,8 +26,8 @@
 #define GTTCAN_NUM_DATA_ID_BITS 16
 #endif
 
-#define REFERENCE_FRAME_DATA_ID 0 // ifndef?
-#define GENERIC_DATA_ID 1         // ifndef?
+#define REFERENCE_FRAME_DATA_ID 0 
+#define GENERIC_DATA_ID 1         
 
 // Consider making this into masked 29 bit CAN Frame IDs from start, but this struct is more readable
 // I think NUM_SLOT_ID_BITS and NUM_DATA_ID_BITS could be up to the end user, but is there any point???
@@ -37,13 +37,13 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 1000 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 1000
 
 typedef struct global_schedule_entry
 {
     uint8_t node_id;
     uint16_t slot_id;
-    uint16_t data_id; // didn't use local_schedule_entry_tag didn't want to over-complicate it
+    uint16_t data_id;
 } global_schedule_entry_t;
 
 typedef global_schedule_entry_t *global_schedule_ptr_t;
@@ -60,7 +60,9 @@ typedef struct gttcan_tag
     bool isActive;
     // Schedule related
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
-    // global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
+    // global_schedule_ptr_t global_schedule_ptr; 
+    /* could keep a pointer in the future if we need to use global_schedule,
+     i.e. fault tolerance or if global_schedule needs to be dynamically changed? */
     uint16_t global_schedule_length;
     uint16_t local_schedule_length;
     uint16_t local_schedule_index;
@@ -91,8 +93,7 @@ void gttcan_init(
     get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp
 );
 
-void gttcan_start(
-    gttcan_t *gttcan);
+void gttcan_start(gttcan_t *gttcan);
 
 void gttcan_transmit_next_frame(gttcan_t *gttcan);
 
@@ -103,9 +104,5 @@ uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t n
 uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t *gttcan);
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data);
-
-void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time);
-
-void gttcan_reset_hardware_time(gttcan_t *gttcan);
 
 #endif
