@@ -215,7 +215,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     if (time > gttcan->timing_offset) {
         return time - gttcan->timing_offset;
     } else {
-        gttcan->transmit_frame_callback_fp(0x88888888, 0x8888888888888888);
         return 1;
     }
 }
