@@ -65,6 +65,7 @@ typedef struct gttcan_tag
     uint16_t local_schedule_length;
     uint16_t local_schedule_index;
     uint32_t slot_duration;
+    uint32_t timing_offset;
 
     // Callback functions
     transmit_frame_callback_fp_t transmit_frame_callback_fp;
@@ -84,6 +85,7 @@ void gttcan_init(
     global_schedule_ptr_t global_schedule_ptr,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
+    uint32_t timing_offset,
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,

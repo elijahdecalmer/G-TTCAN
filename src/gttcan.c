@@ -10,6 +10,7 @@ void gttcan_init(
     global_schedule_ptr_t global_schedule_ptr,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
+    uint32_t timing_offset,
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
@@ -21,6 +22,7 @@ void gttcan_init(
     gttcan->global_schedule_length = global_schedule_length;
     gttcan->slot_duration = slot_duration;
     gttcan->local_schedule_index = 0;
+    gttcan->timing_offset = timing_offset;
     // TODO assigned lastframe_on_bus?!?!?!?1
 
     gttcan_get_local_schedule(gttcan, global_schedule_ptr);
@@ -79,8 +81,8 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     uint32_t ext_frame_header;
     ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
-    //gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
-    gttcan->transmit_frame_callback_fp(ext_frame_header, 0xDEADBEEF);
+    gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
+    //gttcan->transmit_frame_callback_fp(ext_frame_header, 0xDEADBEEF);
 }
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
@@ -204,6 +206,20 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     uint16_t number_of_slots_to_next = gttcan_get_number_of_slots_to_next(current_slot_id, next_slot_id, gttcan->global_schedule_length);
 
     return (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
+}
+
+uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t *gttcan)
+{
+    uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
+    uint16_t number_of_slots_to_next = gttcan_get_number_of_slots_to_next(current_slot_id, next_slot_id, gttcan->global_schedule_length);
+
+    uint32_t time = (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
+    
+    if (time > gttcan->timing_offset) {
+        return time - gttcan->timing_offset;
+    } else {
+        return 1;
+    }
 }
 
 // void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
