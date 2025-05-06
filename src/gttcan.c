@@ -36,6 +36,7 @@ void gttcan_init(
     // gttcan->hardware_time = 0;
     // gttcan->last_reference_frame_hardware_time = 0;
     gttcan->last_schedule_transmission_time = 0;
+    gttcan->is_initialised = true;
 }
 
 // Transmit frame (blink a blinky LED )
@@ -87,6 +88,10 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
 {
+    if (!gttcan->is_initialised ) {
+        return;
+    }
+    
     uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
     uint16_t data_id = can_frame_id & 0xFFFF;
 
