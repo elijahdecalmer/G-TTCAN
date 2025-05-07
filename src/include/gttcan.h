@@ -1,9 +1,13 @@
+
+#ifndef GTTCAN_H
+#define GTTCAN_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 250
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 1000
 #endif
 
 /* REQUIREMENT
@@ -34,7 +38,7 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 250 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 1000 // check if number is ok and ifndef
 
 typedef struct global_schedule_entry
 {
@@ -49,11 +53,13 @@ typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
 typedef uint64_t (*read_value_fp_t)(uint16_t);
 typedef void (*write_value_fp_t)(uint16_t, uint64_t);
+typedef uint32_t(*get_schedule_transmission_time_fp_t)(void);
 
 typedef struct gttcan_tag
 {
     uint8_t node_id;
     bool isActive;
+    bool is_initialised;
     // Schedule related
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
     // global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
@@ -61,17 +67,17 @@ typedef struct gttcan_tag
     uint16_t local_schedule_length;
     uint16_t local_schedule_index;
     uint32_t slot_duration;
+    uint32_t timing_offset;
 
     // Callback functions
     transmit_frame_callback_fp_t transmit_frame_callback_fp;
     set_timer_int_callback_fp_t set_timer_int_callback_fp;
     read_value_fp_t read_value_fp;
     write_value_fp_t write_value_fp;
+    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp;
 
     // Timing related
-    uint32_t hardware_time;
-    uint16_t last_reference_frame_slot_id;
-    uint32_t last_reference_frame_hardware_time;
+    uint32_t last_schedule_transmission_time;
 
     // Time master hierarchy related
     bool isTimeMaster;
@@ -85,10 +91,13 @@ void gttcan_init(
     global_schedule_ptr_t global_schedule_ptr,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
+    uint32_t timing_offset,
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp);
+    write_value_fp_t write_value_fp,
+    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp
+);
 
 void gttcan_start(
     gttcan_t *gttcan);
@@ -106,3 +115,5 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time);
 
 void gttcan_reset_hardware_time(gttcan_t *gttcan);
+
+#endif
