@@ -79,15 +79,19 @@ def analyze_schedule(reference_ids, log_entries):
     present_percent = (total_present / total_expected * 100) if total_expected else 0
     missing_percent = (total_missing / total_expected * 100) if total_expected else 0
 
-    print(f"Reference Schedule Size:      {N}")
-    print(f"Log Frame Count:              {total_log}")
-    print(f"Frames After Trimming:        {total_present}")
-    print(f"Missing Frames:               {total_missing}")
-    print(f"Out-of-Order Events:          {total_out_of_order}")
-    print(f"Completed Cycles Detected:    {completed_cycles}")
-    print(f"Frame Presence:               {present_percent:.2f}%")
-    print(f"Frame Missing Rate:           {missing_percent:.2f}%\n")
+    # Store the summary stats for printing at the end
+    summary_stats = [
+        f"Reference Schedule Size:      {N}",
+        f"Log Frame Count:              {total_log}",
+        f"Frames After Trimming:        {total_present}",
+        f"Missing Frames:               {total_missing}",
+        f"Out-of-Order Events:          {total_out_of_order}",
+        f"Completed Cycles Detected:    {completed_cycles}",
+        f"Frame Presence:               {present_percent:.2f}%",
+        f"Frame Missing Rate:           {missing_percent:.2f}%"
+    ]
 
+    # First print the details for each cycle
     for i, cycle in enumerate(cycles, 1):
         missing = []
         duplicates = []
@@ -121,15 +125,22 @@ def analyze_schedule(reference_ids, log_entries):
             print(f"  Duplicate Frames:    {len(duplicates)} at lines {duplicates}")
         if out_of_order:
             print(f"  Out-of-Order:        {len(out_of_order)} at lines {out_of_order}\n")
+    
+    # Now print the summary stats at the end
+    print("\n===== SUMMARY STATISTICS =====")
+    for stat in summary_stats:
+        print(stat)
 
 def main():
     p = argparse.ArgumentParser(description="Detect missing, duplicate, and out-of-order frames per cycle.")
-    p.add_argument("schedule_c_file", help=".c file with global_schedule")
-    p.add_argument("log_txt_file", help=".txt log file from CAN bus")
+    p.add_argument("--log-file", default="output.txt", help=".txt log file from CAN bus")
+    p.add_argument('--schedule-file', default="../../../Inc/global_schedule.h", help='C file containing the global schedule')
+    p.add_argument('--header-file', default="../src/include/gttcan.h", help='Header file with constants and typedefs')
     args = p.parse_args()
+    
     try:
-        ref_ids = parse_c_schedule(args.schedule_c_file)
-        log_entries = parse_log_file(args.log_txt_file)
+        ref_ids = parse_c_schedule(args.schedule_file)
+        log_entries = parse_log_file(args.log_file)
     except FileNotFoundError as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -325,41 +325,45 @@ if len(cycles) > 0:
     order_issues = 0
     
     for i, cycle in enumerate(cycles):
-        # Print information for every cycle
-        print(f"\nCycle {i+1}:")
-        print("--------------------------------------------------")
-        
-        # Check frame order
-        order_correct = True
-        for j, frame in enumerate(cycle):
-            expected_frame = global_schedule[j]
+        # Skip printing all cycles if there are too many
+        if i < 3 or i == len(cycles) - 1:  # Only print the first 3 and the last one
+            print(f"\nCycle {i+1}:")
+            print("--------------------------------------------------")
             
-            # Make sure data is an integer for formatting
-            exp_node, exp_slot, exp_data = expected_frame
-            if isinstance(exp_data, str):
-                try:
-                    exp_data = int(exp_data)
-                except ValueError:
-                    exp_data = 0
-                    
-            act_node, act_slot, act_data = frame
+            # Check frame order
+            order_correct = True
+            for j, frame in enumerate(cycle):
+                expected_frame = global_schedule[j]
+                
+                # Make sure data is an integer for formatting
+                exp_node, exp_slot, exp_data = expected_frame
+                if isinstance(exp_data, str):
+                    try:
+                        exp_data = int(exp_data)
+                    except ValueError:
+                        exp_data = 0
+                        
+                act_node, act_slot, act_data = frame
+                
+                # Display the frame
+                frame_type = "REFERENCE" if act_data == REFERENCE_FRAME_DATA_ID else "GENERIC"
+                print(f"{j+1:2}. Node {act_node}, Slot 0x{act_slot:02X}, Data ID 0x{act_data:04X} ({frame_type})")
+                
+                # Check if it matches expected
+                if frame != expected_frame:
+                    order_correct = False
+                    print(f"   MISMATCH: Expected Node {exp_node}, Slot 0x{exp_slot:02X}, Data ID 0x{exp_data:04X}")
             
-            # Display the frame
-            frame_type = "REFERENCE" if act_data == REFERENCE_FRAME_DATA_ID else "GENERIC"
-            print(f"{j+1:2}. Node {act_node}, Slot 0x{act_slot:02X}, Data ID 0x{act_data:04X} ({frame_type})")
-            
-            # Check if it matches expected
-            if frame != expected_frame:
-                order_correct = False
-                print(f"   MISMATCH: Expected Node {exp_node}, Slot 0x{exp_slot:02X}, Data ID 0x{exp_data:04X}")
-        
-        # Summary for this cycle
-        if order_correct:
-            print("Order check: PASSED ✓")
-            correct_cycles += 1
-        else:
-            print("Order check: FAILED ✗")
-            order_issues += 1
+            # Summary for this cycle
+            if order_correct:
+                print("Order check: PASSED ✓")
+                correct_cycles += 1
+            else:
+                print("Order check: FAILED ✗")
+                order_issues += 1
+                
+        elif i == 3 and len(cycles) > 4:
+            print(f"\n... skipping {len(cycles) - 4} cycles for brevity ...")
     
     # Overall statistics
     print("\n--------------------------------------------------")
