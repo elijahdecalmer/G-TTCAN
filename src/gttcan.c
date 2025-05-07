@@ -59,15 +59,20 @@ void gttcan_start(
     gttcan_t *gttcan)
 {
     gttcan->local_schedule_index = 0;
-    uint32_t startup_wait_time = (gttcan->global_schedule_length + gttcan->node_id + DEFAULT_STARTUP_PAUSE_SLOTS) * gttcan->slot_duration;
+    uint32_t startup_wait_time = (gttcan->global_schedule_length + (gttcan->node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * gttcan->slot_duration;
     // Waits for n rounds of schedule to confirm no higher priority time masters exist.
-    gttcan->isTimeMaster = true; // This will be off as soon as it receives a higher priority reserved reference slot.
+    gttcan->isTimeMaster = true; // This will be off as soon as it receives a higher priority reserved reference slot. // Will be active once it receives a frame or wait time is over
 
     gttcan->set_timer_int_callback_fp(startup_wait_time); // could change to single round for all + next_transmission if error allows
 }
 
 void gttcan_transmit_next_frame(gttcan_t *gttcan)
 {
+
+    if (!gttcan->isActive) {
+        gttcan->isActive = true;
+        // At this point, if we haven't received any frames, we remain time master
+    }
     uint32_t ext_frame_header;
 
     uint16_t slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
