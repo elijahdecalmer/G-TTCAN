@@ -213,7 +213,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 
 void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_schedule_ptr)
 {
-    uint8_t local_schedule_index = 0;
+    uint16_t local_schedule_index = 0;
     for (int i = 0; i < gttcan->global_schedule_length; i++)
     {
         // Assuming master node ID is 1, maybe change into a #define?
