@@ -24,6 +24,7 @@
 
 #define REFERENCE_FRAME_DATA_ID 0 // ifndef?
 #define GENERIC_DATA_ID 1         // ifndef?
+#define DEFAULT_STARTUP_PAUSE_SLOTS 3
 
 // Consider making this into masked 29 bit CAN Frame IDs from start, but this struct is more readable
 // I think NUM_SLOT_ID_BITS and NUM_DATA_ID_BITS could be up to the end user, but is there any point???
