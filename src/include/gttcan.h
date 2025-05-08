@@ -67,6 +67,7 @@ typedef struct gttcan_tag
     uint16_t local_schedule_index;
     uint32_t slot_duration;
     uint32_t timing_offset;
+    int slot_duration_offset;
 
     // Callback functions
     transmit_frame_callback_fp_t transmit_frame_callback_fp;
