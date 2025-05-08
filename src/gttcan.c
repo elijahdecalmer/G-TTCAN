@@ -37,6 +37,8 @@ void gttcan_init(
     // gttcan->last_reference_frame_hardware_time = 0;
     gttcan->last_schedule_transmission_time = 0;
     gttcan->is_initialised = true;
+
+    gttcan->slot_duration_offset=0;
 }
 
 // Transmit frame (blink a blinky LED )
@@ -217,10 +219,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
 {
     uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t number_of_slots_to_next = gttcan_get_number_of_slots_to_next(current_slot_id, next_slot_id, gttcan->global_schedule_length);
-
-    if ((gttcan->slot_duration_offset/50) < -1*gttcan->slot_duration || (gttcan->slot_duration_offset/50) > gttcan->slot_duration ){
-        gttcan->slot_duration_offset = 0;
-    }
 
     gttcan->slot_duration += gttcan->slot_duration_offset;
 
