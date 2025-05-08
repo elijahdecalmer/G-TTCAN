@@ -7,7 +7,7 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 256
 #endif
 
 /* REQUIREMENT
@@ -37,7 +37,7 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 512 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 256 // check if number is ok and ifndef
 
 typedef struct global_schedule_entry
 {
@@ -52,7 +52,7 @@ typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
 typedef uint64_t (*read_value_fp_t)(uint16_t);
 typedef void (*write_value_fp_t)(uint16_t, uint64_t);
-typedef uint32_t(*get_schedule_transmission_time_fp_t)(void);
+typedef uint32_t (*get_schedule_transmission_time_fp_t)(void);
 
 typedef struct gttcan_tag
 {
@@ -94,8 +94,7 @@ void gttcan_init(
     get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp
 );
 
-void gttcan_start(
-    gttcan_t *gttcan);
+void gttcan_start(gttcan_t *gttcan);
 
 void gttcan_transmit_next_frame(gttcan_t *gttcan);
 
