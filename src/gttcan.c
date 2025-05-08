@@ -100,12 +100,12 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (gttcan->local_schedule_index > 0 && slot_id > gttcan->local_schedule[gttcan->local_schedule_index].slot_id)
     {
         // If received frame is greater than the next one I want to send, and I haven't wrapped, then I am slow
-        gttcan->slot_duration_offset--; // SPEED ME UP
+        gttcan->slot_duration--; // SPEED ME UP
     }
     if (gttcan->local_schedule_index > 0 && slot_id != 0 && slot_id < gttcan->local_schedule[gttcan->local_schedule_index - 1].slot_id)
     {
         // If received frame is less than one I have already transmitted (and I've transmitted already this schedule)
-        gttcan->slot_duration_offset++; // SLOW ME DOWN, I TRANSMITTED BEFORE SOMEONE ELSE HAD THE CHANCE, WHICH CAN'T BE POSSIBLE IF I AM AT ZERO
+        gttcan->slot_duration++; // SLOW ME DOWN, I TRANSMITTED BEFORE SOMEONE ELSE HAD THE CHANCE, WHICH CAN'T BE POSSIBLE IF I AM AT ZERO
     }
 
     if (!gttcan->isActive && slot_id == 0)
@@ -142,11 +142,11 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
                 // Found the next slot, position the index at the previous entry
                 if (gttcan->local_schedule_index < i)
                 {
-                    gttcan->slot_duration_offset--; // NEEDS A SPEEDUP, because I didn't get to transmit a frame
+                    gttcan->slot_duration--; // NEEDS A SPEEDUP, because I didn't get to transmit a frame
                 }
                 if (i == 0 && gttcan->local_schedule_index)
                 {
-                    gttcan->slot_duration_offset--; // Needs a speedup, as I never got to transmit my final frame
+                    gttcan->slot_duration--; // Needs a speedup, as I never got to transmit my final frame
                 }
                 gttcan->local_schedule_index = i;
 
@@ -160,7 +160,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             // No slot is greater than the reference slot
             if (gttcan->local_schedule_index != 0)
             {
-                gttcan->slot_duration_offset--; // Needs a speedup, as I never got to transmit my final frame
+                gttcan->slot_duration--; // Needs a speedup, as I never got to transmit my final frame
             }
             gttcan->local_schedule_index = 0;
         }
@@ -220,7 +220,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t number_of_slots_to_next = gttcan_get_number_of_slots_to_next(current_slot_id, next_slot_id, gttcan->global_schedule_length);
 
-    gttcan->slot_duration += gttcan->slot_duration_offset;
 
     uint32_t time = (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
 
