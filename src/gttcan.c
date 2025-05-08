@@ -223,7 +223,6 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     }
 
     gttcan->slot_duration += gttcan->slot_duration_offset / 50;
-    gttcan->slot_duration_offset = 0;
 
     uint32_t time = (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
 
