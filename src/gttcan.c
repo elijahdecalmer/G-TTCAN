@@ -65,8 +65,10 @@ void gttcan_start(
 {
     gttcan->has_received = false;
     gttcan->isActive = true;
+    uint32_t start_up_wait_time = ((gttcan->global_schedule_length + (gttcan->node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * gttcan->slot_duration);
     gttcan->local_schedule_index = 0;
-    gttcan_transmit_next_frame(gttcan);
+    gttcan->isTimeMaster = false;
+    gttcan->set_timer_int_callback_fp(start_up_wait_time);
 }
 
 void gttcan_transmit_next_frame(gttcan_t *gttcan)
@@ -89,7 +91,7 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
         gttcan->last_lowest_seen_node_id = gttcan->current_lowest_seen_node_id;
         gttcan->current_lowest_seen_node_id = 0;
-        if (gttcan->node_id != 1){ // IF NOT THE MASTER
+        if (!gttcan->isTimeMaster){ // IF NOT THE MASTER
             gttcan->reached_end_of_my_schedule_prematurely = true;
 
         }
@@ -110,7 +112,7 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
     }
 
-    if(gttcan->local_schedule_index == 0){
+    if(gttcan->local_schedule_index == 0 && !gttcan->isTimeMaster){
         if (gttcan->slot_duration_offset > 0){
             gttcan->slot_duration++;
         }
@@ -232,7 +234,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     }
     // future per frame clock correction functionalities maybe
 
-    uint8_t rx_node_id = NULL;
+    uint8_t rx_node_id;
     for(int i = 0; i < gttcan->global_schedule_length; i++){
         if(gttcan->global_schedule_ptr[i].slot_id == slot_id){
             rx_node_id = gttcan->global_schedule_ptr[i].node_id;
@@ -240,7 +242,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         }
     }
 
-    if (rx_node_id != NULL && (rx_node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0)){
+    if ((rx_node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0)){
         gttcan->current_lowest_seen_node_id = rx_node_id;
     }
 

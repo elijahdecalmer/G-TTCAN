@@ -7,7 +7,7 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 256
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
 #endif
 
 /* REQUIREMENT
@@ -28,6 +28,7 @@
 
 #define REFERENCE_FRAME_DATA_ID 0 // ifndef?
 #define GENERIC_DATA_ID 1         // ifndef?
+#define DEFAULT_STARTUP_PAUSE_SLOTS 2
 
 // Consider making this into masked 29 bit CAN Frame IDs from start, but this struct is more readable
 // I think NUM_SLOT_ID_BITS and NUM_DATA_ID_BITS could be up to the end user, but is there any point???
@@ -37,7 +38,7 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 256 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 512 // check if number is ok and ifndef
 
 typedef struct global_schedule_entry
 {
