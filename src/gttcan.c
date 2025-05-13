@@ -42,6 +42,10 @@ void gttcan_init(
     gttcan->isTimeMaster = false;
     gttcan->last_schedule_transmission_time = 0;
     gttcan->is_initialised = true;
+    gttcan->reached_start_of_schedule = false;
+    gttcan->time_master_transmitted_last_round = false;
+    gttcan->declaration_sent = false;
+
 }
 
 
@@ -59,8 +63,6 @@ void gttcan_start(
 void gttcan_transmit_next_frame(gttcan_t *gttcan)
 {
     if (!gttcan->is_initialised || gttcan->local_schedule_length == 0) {
-        // Set timer to a long duration or handle error, then return
-        // For simplicity, just returning here. A robust system might set a long poll timer.
         return;
     }
 
@@ -72,31 +74,43 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     uint16_t current_slot_id = current_ls_entry.slot_id; 
     uint16_t current_data_id = current_ls_entry.data_id; 
 
+    if(current_slot_id == gttcan->local_schedule[0].slot_id){
+        gttcan->reached_start_of_schedule = true;
+        gttcan->time_master_transmitted_last_round = false;
+    }
+
     bool should_transmit = false;
     uint64_t payload_data = 0;
-    payload_data = ((uint64_t)gttcan->current_time_master_node_id << 16) | gttcan->node_id; 
+    
+    // Just include the node's own ID in the payload
+    payload_data = gttcan->node_id;
 
     // --- Determine if this node should transmit this current_ls_entry ---
     if (current_data_id != REFERENCE_FRAME_DATA_ID) {
-        // It's a DATA frame.
+        // Regular data frame - transmit if it's in my schedule
         should_transmit = true;
-
     } else {
-        // It's a REFERENCE frame.
+        // It's a REFERENCE frame
         bool is_declaration_slot_range = (current_slot_id < gttcan->total_nodes);
 
         if (is_declaration_slot_range) {
-            // This is a REF frame in a declaration slot.
-            // If it's in my local_schedule (per revised gttcan_get_local_schedule), it must be MY declaration.
-            if(gttcan->current_time_master_node_id == 0 || gttcan->current_time_master_node_id > gttcan->node_id){
-                gttcan->current_time_master_node_id = gttcan->node_id;
-            }
-            should_transmit = true;
-        } else {
-            // This is a SUBSEQUENT reference frame (after declaration slots).
-            // Transmit it ONLY if I am the current Time Master.
-            if (gttcan->current_time_master_node_id == gttcan->node_id) {
+            // This is MY declaration slot - only transmit once per cycle
+            if (!gttcan->declaration_sent && current_slot_id == gttcan->node_id - 1) {
                 should_transmit = true;
+                gttcan->declaration_sent = true;
+                
+                // When sending declaration, update time master if I'm lower ID than current
+                if (gttcan->current_time_master_node_id == 0 || 
+                    gttcan->node_id < gttcan->current_time_master_node_id) {
+                    gttcan->current_time_master_node_id = gttcan->node_id;
+                    gttcan->isTimeMaster = true;
+                }
+            }
+        } else {
+            // Regular reference frame - ONLY transmit if I am definitely the time master
+            if (gttcan->current_time_master_node_id == gttcan->node_id && gttcan->isTimeMaster) {
+                should_transmit = true;
+                gttcan->time_master_transmitted_last_round = true;
             }
         }
     }
@@ -104,19 +118,17 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     // --- CAN ID Construction & Transmission ---
     uint32_t ext_frame_header = ((uint32_t)current_slot_id << GTTCAN_NUM_DATA_ID_BITS) | current_data_id;
 
-    
-
-    // --- Advance schedule index and set timer for the NEXT event REGARDLESS of transmission ---
+    // --- Advance schedule index and set timer for the NEXT event ---
     gttcan->local_schedule_index++;
     if (gttcan->local_schedule_index >= gttcan->local_schedule_length) {
         gttcan->local_schedule_index = 0;
-        gttcan->current_time_master_node_id = 0; // Reset for next round's election
-        gttcan->isTimeMaster = false;
+         gttcan->declaration_sent = false; // Reset declaration flag for new cycle
+        // Only reset time master status between cycles if no master was identified
+        if (gttcan->current_time_master_node_id == 0) {
+            gttcan->isTimeMaster = false;
+        }
     }
 
-    // If local_schedule_length is > 0, there's always a next item (could be wrapped)
-    // The current_slot_id used here is from the frame just processed (or skipped transmission for).
-    // The time to next transmission is calculated from *this* slot to the *next* in the local schedule.
     uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(current_slot_id, gttcan);
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
@@ -136,71 +148,56 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     uint16_t received_slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS);
     uint16_t received_data_id = can_frame_id & data_id_mask;
 
+    // Extract just the sender node ID from the data field
+    uint8_t sender_node_id = (uint8_t)(data & 0xFF);
 
     // --- Master Election Phase (when a declaration frame is received) ---
     bool is_declaration_slot_range = (received_slot_id < gttcan->total_nodes);
 
-    if (is_declaration_slot_range && received_data_id == REFERENCE_FRAME_DATA_ID) {
-        // This frame is a declaration from another node.
-        // Find out which node *should* have sent this declaration frame. This handles partially filled schedules
-        // Should fin
-        uint8_t scheduled_sender_node_id = gttcan->global_schedule_ptr[received_slot_id].node_id;
-        if (gttcan->current_time_master_node_id == 0 || scheduled_sender_node_id < gttcan->current_time_master_node_id) {
-            gttcan->current_time_master_node_id = scheduled_sender_node_id;
-        }
-    }
-
-    // --- Update own isTimeMaster status based on election ---
-    if (gttcan->current_time_master_node_id != 0) {
-        gttcan->isTimeMaster = (gttcan->current_time_master_node_id == gttcan->node_id);
-    }
-    // If current_time_master_node_id is still 0, isTimeMaster retains its state from gttcan_start (optimistically true)
-    // until the startup_wait_time expires or a master is found.
-
-
-    // --- Synchronization to Time Master's Reference Frames ---
-    
-
-    bool is_ref_from_elected_master = (received_data_id == REFERENCE_FRAME_DATA_ID) &&
-                                      (gttcan->current_time_master_node_id != 0);
-
-    if (is_ref_from_elected_master) {
-        // A valid reference frame from the elected master has been received.
-        // This is the key point for a late joiner to synchronize.
-
-        if (!gttcan->isActive) { // First time we are syncing to an active master
-            gttcan->isActive = true;
-        }
-
-        // If I (late joiner) thought I was master due to gttcan_start, but this REF is from the actual master,
-        // I must correct my status.
-        if (gttcan->node_id != gttcan->current_time_master_node_id) {
-            gttcan->isTimeMaster = false; // Relinquish optimistic mastership
-        }
-
-        int32_t time_difference_for_sync = 0; // Placeholder
-
-        // Resynchronize local_schedule_index:
-        int found_next_local_schedule_item = -1;
-        for (int i = 0; i < gttcan->local_schedule_length; i++) {
-            if (gttcan->local_schedule[i].slot_id > received_slot_id) {
-                gttcan->local_schedule_index = i;
-                found_next_local_schedule_item = 1;
-                break;
+    if (received_data_id == REFERENCE_FRAME_DATA_ID) {
+        // Handle any reference frame (declaration or regular)
+        
+        if (is_declaration_slot_range) {
+            // This is a declaration frame - strict enforcement of lowest node ID wins
+            if (sender_node_id < gttcan->current_time_master_node_id || gttcan->current_time_master_node_id == 0) {
+                gttcan->current_time_master_node_id = sender_node_id;
+                gttcan->isTimeMaster = (sender_node_id == gttcan->node_id);
+            }
+        } else {
+            // Regular reference frame - confirm the time master
+            // We know only the elected time master should be sending these
+            if (sender_node_id == gttcan->current_time_master_node_id) {
+                // This confirms the time master is active
+                gttcan->time_master_transmitted_last_round = true;
             }
         }
-        if (found_next_local_schedule_item < 0) {
-            gttcan->local_schedule_index = 0; // Wrap around
+
+        // --- Synchronization to Time Master's Reference Frames ---
+        // Only synchronize to the actual elected time master
+        if (sender_node_id == gttcan->current_time_master_node_id) {
+            if (!gttcan->isActive) {
+                gttcan->isActive = true;
+            }
+
+            // Resynchronize local_schedule_index
+            int found_next_local_schedule_item = -1;
+            for (int i = 0; i < gttcan->local_schedule_length; i++) {
+                if (gttcan->local_schedule[i].slot_id > received_slot_id) {
+                    gttcan->local_schedule_index = i;
+                    found_next_local_schedule_item = 1;
+                    break;
+                }
+            }
+            if (found_next_local_schedule_item < 0) {
+                gttcan->local_schedule_index = 0; // Wrap around
+            }
+
+            // Calculate time to next transmission
+            uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(received_slot_id, gttcan);
+            gttcan->set_timer_int_callback_fp(time_to_next_transmission);
         }
-
-        // CRITICAL FOR LATE JOINER: Reset the timer.
-        // This overrides the timer set by gttcan_start's startup_wait_time.
-        // The node is now synced and will schedule its next transmission correctly.
-        uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(received_slot_id, gttcan)
-                                             + time_difference_for_sync;
-        gttcan->set_timer_int_callback_fp(time_to_next_transmission);
-
     } else if (received_data_id != REFERENCE_FRAME_DATA_ID) {
+        // Regular data frame processing
         if (gttcan->isActive) {
             gttcan->write_value_fp(received_data_id, data);
         }
@@ -220,18 +217,25 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
         global_schedule_entry_t current_global_entry = global_schedule_ptr[i];
         bool add_to_local = false;
 
-        // Condition 1: Is it this node's OWN frame (declaration or data)?
-        if (current_global_entry.node_id == gttcan->node_id) {
+        // Condition 1: Is it this node's OWN data frames?
+        if (current_global_entry.node_id == gttcan->node_id && 
+            current_global_entry.data_id != REFERENCE_FRAME_DATA_ID) {
             add_to_local = true;
         }
-        // Condition 2: Is it a SUBSEQUENT reference frame (globally Node 1's, after declaration phase)?
-        // These are added to every node's local schedule as potential transmission candidates if they become master.
-        else if (current_global_entry.node_id == 1 && // Originally Node 1's
+        
+        // Condition 2: Is it this node's OWN declaration slot?
+        else if (current_global_entry.node_id == gttcan->node_id && 
                  current_global_entry.data_id == REFERENCE_FRAME_DATA_ID &&
-                 current_global_entry.slot_id >= gttcan->node_id) { // After declaration slots
+                 current_global_entry.slot_id < highest_node_id) {
             add_to_local = true;
         }
-        // Note: Node 1's declaration frame (slot_id < total_nodes) is NOT added to other nodes'
+        
+        // Condition 3: Include ALL reference frames EXCEPT Node 1's declaration slot
+        else if (current_global_entry.data_id == REFERENCE_FRAME_DATA_ID && 
+                !(current_global_entry.node_id == 1 && 
+                  current_global_entry.slot_id < highest_node_id)) {
+            add_to_local = true;
+        }
 
         if (add_to_local) {
             if (current_local_schedule_length < GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH) {
@@ -244,7 +248,6 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
     gttcan->total_nodes = highest_node_id;
     gttcan->local_schedule_length = current_local_schedule_length;
 }
-
 uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t next_slot_id, uint16_t global_schedule_length)
 {
     if (current_slot_id < next_slot_id)

@@ -83,6 +83,9 @@ typedef struct gttcan_tag
     bool isTimeMaster;
     uint8_t current_time_master_node_id;
     uint8_t total_nodes;
+    bool reached_start_of_schedule;
+    bool time_master_transmitted_last_round;
+    bool declaration_sent;
 
 } gttcan_t;
 
