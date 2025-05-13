@@ -83,7 +83,8 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     uint64_t payload_data = 0;
     
     // Just include the node's own ID in the payload
-    payload_data = gttcan->node_id;
+    payload_data = ((uint64_t)gttcan->current_time_master_node_id << 16) | gttcan->node_id; 
+
 
     // --- Determine if this node should transmit this current_ls_entry ---
     if (current_data_id != REFERENCE_FRAME_DATA_ID) {
@@ -233,7 +234,7 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
         // Condition 3: Include ALL reference frames EXCEPT Node 1's declaration slot
         else if (current_global_entry.data_id == REFERENCE_FRAME_DATA_ID && 
                 !(current_global_entry.node_id == 1 && 
-                  current_global_entry.slot_id < highest_node_id)) {
+                  current_global_entry.slot_id > highest_node_id)) {
             add_to_local = true;
         }
 
