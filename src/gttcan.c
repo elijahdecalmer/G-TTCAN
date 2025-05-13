@@ -25,6 +25,7 @@ void gttcan_init(
     gttcan->timing_offset = timing_offset;
     // TODO assigned lastframe_on_bus?!?!?!?1
 
+    gttcan->global_schedule_ptr = global_schedule_ptr;
     gttcan_get_local_schedule(gttcan, global_schedule_ptr);
 
     gttcan->transmit_frame_callback_fp = transmit_frame_callback_fp;
@@ -40,6 +41,11 @@ void gttcan_init(
 
     gttcan->slot_duration_offset=0;
     gttcan->reached_end_of_my_schedule_prematurely = false;
+
+    gttcan->last_lowest_seen_node_id = 0;
+    gttcan->current_lowest_seen_node_id = 0;
+    gttcan->has_received = false;
+
 }
 
 // Transmit frame (blink a blinky LED )
@@ -57,6 +63,7 @@ void gttcan_init(
 void gttcan_start(
     gttcan_t *gttcan)
 {
+    gttcan->has_received = false;
     gttcan->isActive = true;
     gttcan->local_schedule_index = 0;
     gttcan_transmit_next_frame(gttcan);
@@ -69,6 +76,7 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         return;
     }
 
+
     uint16_t slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t data_id = gttcan->local_schedule[gttcan->local_schedule_index].data_id;
 
@@ -76,6 +84,11 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     if (gttcan->local_schedule_index >= gttcan->local_schedule_length)
     { // TODO MAKE THIS A == ONCE THAT CAN BE ENSURED IS SAFE
         gttcan->local_schedule_index = 0;
+
+        gttcan->isTimeMaster = (gttcan->last_lowest_seen_node_id == gttcan->current_lowest_seen_node_id) && (gttcan->current_lowest_seen_node_id == gttcan->node_id);
+
+        gttcan->last_lowest_seen_node_id = gttcan->current_lowest_seen_node_id;
+        gttcan->current_lowest_seen_node_id = 0;
         if (gttcan->node_id != 1){ // IF NOT THE MASTER
             gttcan->reached_end_of_my_schedule_prematurely = true;
 
@@ -86,9 +99,16 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
+    if(gttcan->has_received == false){
+        gttcan->isTimeMaster = true;
+    }
+
     uint32_t ext_frame_header;
     ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
-    gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
+    
+    if(data_id != REFERENCE_FRAME_DATA_ID || gttcan->isTimeMaster){
+        gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
+    }
 
     if(gttcan->local_schedule_index == 0){
         if (gttcan->slot_duration_offset > 0){
@@ -97,6 +117,10 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         if (gttcan->slot_duration_offset < 0) {
             gttcan->slot_duration--;
         }
+    }
+
+    if (gttcan->node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0){
+        gttcan->current_lowest_seen_node_id = gttcan->node_id;
     }
     // gttcan->transmit_frame_callback_fp(ext_frame_header, 0xDEADBEEF);
 }
@@ -107,6 +131,10 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     {
         return;
     }
+    if(!gttcan->has_received){
+        gttcan->has_received = true;
+    }
+    
 
     uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
     uint16_t data_id = can_frame_id & 0xFFFF;
@@ -203,6 +231,19 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         gttcan->write_value_fp(data_id, data);
     }
     // future per frame clock correction functionalities maybe
+
+    uint8_t rx_node_id = NULL;
+    for(int i = 0; i < gttcan->global_schedule_length; i++){
+        if(gttcan->global_schedule_ptr[i].slot_id == slot_id){
+            rx_node_id = gttcan->global_schedule_ptr[i].node_id;
+            break;
+        }
+    }
+
+    if (rx_node_id != NULL && (rx_node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0)){
+        gttcan->current_lowest_seen_node_id = rx_node_id;
+    }
+
 }
 
 void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_schedule_ptr)
@@ -210,7 +251,9 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
     uint16_t local_schedule_index = 0;
     for (int i = 0; i < gttcan->global_schedule_length; i++)
     {
-        if (global_schedule_ptr[i].node_id == gttcan->node_id)
+        bool add_to_local = false;
+        // Is this my own frame or reference frames?
+        if (global_schedule_ptr[i].node_id == gttcan->node_id || global_schedule_ptr[i].data_id == REFERENCE_FRAME_DATA_ID)
         {
             gttcan->local_schedule[local_schedule_index].slot_id = global_schedule_ptr[i].slot_id;
             gttcan->local_schedule[local_schedule_index].data_id = global_schedule_ptr[i].data_id;

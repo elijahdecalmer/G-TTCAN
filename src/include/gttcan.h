@@ -61,7 +61,7 @@ typedef struct gttcan_tag
     bool is_initialised;
     // Schedule related
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
-    // global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
+    global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
     uint16_t global_schedule_length;
     uint16_t local_schedule_length;
     uint16_t local_schedule_index;
@@ -81,6 +81,13 @@ typedef struct gttcan_tag
     bool has_adjusted_slots_this_round;
 
     bool reached_end_of_my_schedule_prematurely;
+
+
+    // Cascading master
+    uint8_t last_lowest_seen_node_id;
+    uint8_t current_lowest_seen_node_id;
+    bool isTimeMaster;
+    bool has_received;
 
 } gttcan_t;
 
