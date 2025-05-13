@@ -78,6 +78,9 @@ typedef struct gttcan_tag
 
     // Timing related
     uint32_t last_schedule_transmission_time;
+    bool has_adjusted_slots_this_round;
+
+    bool reached_end_of_my_schedule_prematurely;
 
 } gttcan_t;
 
