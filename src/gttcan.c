@@ -234,7 +234,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     }
     // future per frame clock correction functionalities maybe
 
-    uint8_t rx_node_id;
+    uint8_t rx_node_id = 0; // Default value indicating no match found
     for(int i = 0; i < gttcan->global_schedule_length; i++){
         if(gttcan->global_schedule_ptr[i].slot_id == slot_id){
             rx_node_id = gttcan->global_schedule_ptr[i].node_id;
