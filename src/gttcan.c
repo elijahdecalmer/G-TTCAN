@@ -167,7 +167,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
         gttcan->reached_end_of_my_schedule_prematurely = false;
-        if(slot_id < 5 && !gttcan->isTimeMaster){
+        if(slot_id == 0 && !gttcan->isTimeMaster){
             if (gttcan->slot_duration_offset > 0){
                 gttcan->slot_duration++;
             }
