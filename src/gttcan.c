@@ -253,7 +253,6 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
     uint16_t local_schedule_index = 0;
     for (int i = 0; i < gttcan->global_schedule_length; i++)
     {
-        bool add_to_local = false;
         // Is this my own frame or reference frames?
         if (global_schedule_ptr[i].node_id == gttcan->node_id || global_schedule_ptr[i].data_id == REFERENCE_FRAME_DATA_ID)
         {
