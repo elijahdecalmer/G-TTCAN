@@ -68,6 +68,7 @@ void gttcan_start(
     uint32_t start_up_wait_time = ((gttcan->global_schedule_length + (gttcan->node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * gttcan->slot_duration);
     gttcan->local_schedule_index = 0;
     gttcan->isTimeMaster = false;
+    gttcan->last_lowest_seen_node_id = gttcan->node_id;
     gttcan->set_timer_int_callback_fp(start_up_wait_time);
 }
 
@@ -166,7 +167,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
         gttcan->reached_end_of_my_schedule_prematurely = false;
-        if(gttcan->local_schedule_index == 0 && !gttcan->isTimeMaster){
+        if(slot_id < 5 && !gttcan->isTimeMaster){
             if (gttcan->slot_duration_offset > 0){
                 gttcan->slot_duration++;
             }
