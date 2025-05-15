@@ -10,20 +10,18 @@ void gttcan_init(
     global_schedule_ptr_t global_schedule_ptr,
     uint16_t global_schedule_length,
     uint32_t slot_duration,
-    uint32_t timing_offset,
+    uint32_t interrupt_timing_offset,
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp,
-    get_schedule_transmission_time_fp_t get_schedule_transmission_time_fp)
+    write_value_fp_t write_value_fp)
 {
-    gttcan->isActive = false;
+    gttcan->is_active = false;
     gttcan->node_id = node_id;
     gttcan->global_schedule_length = global_schedule_length;
     gttcan->slot_duration = slot_duration;
     gttcan->local_schedule_index = 0;
-    gttcan->timing_offset = timing_offset;
-    // TODO assigned lastframe_on_bus?!?!?!?1
+    gttcan->interrupt_timing_offset = interrupt_timing_offset;
 
     gttcan->global_schedule_ptr = global_schedule_ptr;
     gttcan_get_local_schedule(gttcan, global_schedule_ptr);
@@ -32,20 +30,15 @@ void gttcan_init(
     gttcan->set_timer_int_callback_fp = set_timer_int_callback_fp;
     gttcan->read_value_fp = read_value_fp;
     gttcan->write_value_fp = write_value_fp;
-    gttcan->get_schedule_transmission_time_fp = get_schedule_transmission_time_fp;
 
-    // gttcan->hardware_time = 0;
-    // gttcan->last_reference_frame_hardware_time = 0;
-    gttcan->last_schedule_transmission_time = 0;
     gttcan->is_initialised = true;
 
-    gttcan->slot_duration_offset=0;
+    gttcan->slot_duration_offset = 0;
     gttcan->reached_end_of_my_schedule_prematurely = false;
 
     gttcan->last_lowest_seen_node_id = 0;
     gttcan->current_lowest_seen_node_id = 0;
     gttcan->has_received = false;
-
 }
 
 // Transmit frame (blink a blinky LED )
@@ -64,21 +57,20 @@ void gttcan_start(
     gttcan_t *gttcan)
 {
     gttcan->has_received = false;
-    gttcan->isActive = true;
+    gttcan->is_active = true;
     uint32_t start_up_wait_time = ((gttcan->global_schedule_length + (gttcan->node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * gttcan->slot_duration);
     gttcan->local_schedule_index = 0;
-    gttcan->isTimeMaster = false;
+    gttcan->is_time_master = false;
     gttcan->last_lowest_seen_node_id = gttcan->node_id;
     gttcan->set_timer_int_callback_fp(start_up_wait_time);
 }
 
 void gttcan_transmit_next_frame(gttcan_t *gttcan)
 {
-    if (!gttcan->isActive)
+    if (!gttcan->is_active)
     {
         return;
     }
-
 
     uint16_t slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t data_id = gttcan->local_schedule[gttcan->local_schedule_index].data_id;
@@ -88,13 +80,13 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     { // TODO MAKE THIS A == ONCE THAT CAN BE ENSURED IS SAFE
         gttcan->local_schedule_index = 0;
 
-        gttcan->isTimeMaster = (gttcan->last_lowest_seen_node_id == gttcan->current_lowest_seen_node_id) && (gttcan->current_lowest_seen_node_id == gttcan->node_id);
+        gttcan->is_time_master = (gttcan->last_lowest_seen_node_id == gttcan->current_lowest_seen_node_id) && (gttcan->current_lowest_seen_node_id == gttcan->node_id);
 
         gttcan->last_lowest_seen_node_id = gttcan->current_lowest_seen_node_id;
         gttcan->current_lowest_seen_node_id = 0;
-        if (!gttcan->isTimeMaster){ // IF NOT THE MASTER
+        if (!gttcan->is_time_master)
+        { // IF NOT THE MASTER
             gttcan->reached_end_of_my_schedule_prematurely = true;
-
         }
     }
 
@@ -102,18 +94,21 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
-    if(gttcan->has_received == false){
-        gttcan->isTimeMaster = true;
+    if (gttcan->has_received == false)
+    {
+        gttcan->is_time_master = true;
     }
 
     uint32_t ext_frame_header;
     ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id; // TODO CHECK THE SAFETY OF THIS, should DATA_ID BE ANDED WITH A MASK OF LENGTH DATA_ID????
-    
-    if(data_id != REFERENCE_FRAME_DATA_ID || gttcan->isTimeMaster){
+
+    if (data_id != REFERENCE_FRAME_DATA_ID || gttcan->is_time_master)
+    {
         gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
     }
 
-    if (gttcan->node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0){
+    if (gttcan->node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0)
+    {
         gttcan->current_lowest_seen_node_id = gttcan->node_id;
     }
     // gttcan->transmit_frame_callback_fp(ext_frame_header, 0xDEADBEEF);
@@ -125,10 +120,10 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     {
         return;
     }
-    if(!gttcan->has_received){
+    if (!gttcan->has_received)
+    {
         gttcan->has_received = true;
     }
-    
 
     uint16_t slot_id = (can_frame_id >> GTTCAN_NUM_DATA_ID_BITS) & 0xFFFF;
     uint16_t data_id = can_frame_id & 0xFFFF;
@@ -144,34 +139,22 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         gttcan->slot_duration_offset++; // SLOW ME DOWN, I TRANSMITTED BEFORE SOMEONE ELSE HAD THE CHANCE, WHICH CAN'T BE POSSIBLE IF I AM AT ZERO
     }
 
-    if (!gttcan->isActive && slot_id == 0)
+    if (!gttcan->is_active && slot_id == 0)
     {
-        gttcan->isActive = true;
-        // uint32_t time_to_next_transmission = gttcan_get_time_to_next_transmission(slot_id,gttcan); //offset correction
-        // gttcan->set_timer_int_callback_fp(time_to_next_transmission);
-    }
-
-    if (slot_id == 0)
-    {
-        if (gttcan->last_schedule_transmission_time == 0)
-        {
-            gttcan->last_schedule_transmission_time = gttcan->get_schedule_transmission_time_fp();
-        }
-        else
-        {
-            // uint32_t expected_time_elapsed = (uint32_t)gttcan->global_schedule_length * gttcan->slot_duration;
-            // gttcan->slot_duration = gttcan->last_schedule_transmission_time / (uint32_t)gttcan->global_schedule_length;
-        }
+        gttcan->is_active = true;
     }
 
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
         gttcan->reached_end_of_my_schedule_prematurely = false;
-        if(slot_id == 0 && !gttcan->isTimeMaster){
-            if (gttcan->slot_duration_offset > 0){
+        if (slot_id == 0 && !gttcan->is_time_master)
+        {
+            if (gttcan->slot_duration_offset > 0)
+            {
                 gttcan->slot_duration++;
             }
-            if (gttcan->slot_duration_offset < 0) {
+            if (gttcan->slot_duration_offset < 0)
+            {
                 gttcan->slot_duration--;
             }
         }
@@ -207,7 +190,6 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             if (gttcan->local_schedule_index != 0 && !gttcan->reached_end_of_my_schedule_prematurely)
             {
                 gttcan->slot_duration_offset--; // Needs a speedup, as I never got to transmit my final frame
-
             }
             gttcan->local_schedule_index = 0;
         }
@@ -235,17 +217,19 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     // future per frame clock correction functionalities maybe
 
     uint8_t rx_node_id = 0; // Default value indicating no match found
-    for(int i = 0; i < gttcan->global_schedule_length; i++){
-        if(gttcan->global_schedule_ptr[i].slot_id == slot_id){
+    for (int i = 0; i < gttcan->global_schedule_length; i++)
+    {
+        if (gttcan->global_schedule_ptr[i].slot_id == slot_id)
+        {
             rx_node_id = gttcan->global_schedule_ptr[i].node_id;
             break;
         }
     }
 
-    if ((rx_node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0)){
+    if ((rx_node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0))
+    {
         gttcan->current_lowest_seen_node_id = rx_node_id;
     }
-
 }
 
 void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_schedule_ptr)
@@ -281,24 +265,14 @@ uint32_t gttcan_get_time_to_next_transmission(uint16_t current_slot_id, gttcan_t
     uint16_t next_slot_id = gttcan->local_schedule[gttcan->local_schedule_index].slot_id;
     uint16_t number_of_slots_to_next = gttcan_get_number_of_slots_to_next(current_slot_id, next_slot_id, gttcan->global_schedule_length);
 
-
     uint32_t time = (uint32_t)number_of_slots_to_next * gttcan->slot_duration;
 
-    if (time > gttcan->timing_offset)
+    if (time > gttcan->interrupt_timing_offset)
     {
-        return time - gttcan->timing_offset;
+        return time - gttcan->interrupt_timing_offset;
     }
     else
     {
         return 1;
     }
 }
-
-// void gttcan_accumulate_hardware_time(gttcan_t *gttcan, uint32_t hardware_time)
-// {
-//     gttcan->hardware_time += hardware_time;
-// }
-
-// void gttcan_reset_hardware_time(gttcan_t *gttcan){
-//     gttcan->hardware_time = 0;
-// }
