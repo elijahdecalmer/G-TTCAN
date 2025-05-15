@@ -7,7 +7,7 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 256
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
 #endif
 
 /* REQUIREMENT
@@ -28,6 +28,7 @@
 
 #define REFERENCE_FRAME_DATA_ID 0 // ifndef?
 #define GENERIC_DATA_ID 1         // ifndef?
+#define DEFAULT_STARTUP_PAUSE_SLOTS 2
 
 // Consider making this into masked 29 bit CAN Frame IDs from start, but this struct is more readable
 // I think NUM_SLOT_ID_BITS and NUM_DATA_ID_BITS could be up to the end user, but is there any point???
@@ -37,7 +38,7 @@ typedef struct local_schedule_entry_tag
     uint16_t data_id;     // could be as large as the size of the whiteboard //TODO:?
 } local_schedule_entry_t; // THIS SHOULD BE USED when it needs to be used in a user defined function
 
-#define MAX_GLOBAL_SCHEDULE_LENGTH 256 // check if number is ok and ifndef
+#define MAX_GLOBAL_SCHEDULE_LENGTH 512 // check if number is ok and ifndef
 
 typedef struct global_schedule_entry
 {
@@ -61,12 +62,13 @@ typedef struct gttcan_tag
     bool is_initialised;
     // Schedule related
     local_schedule_entry_t local_schedule[GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH];
-    // global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
+    global_schedule_ptr_t global_schedule_ptr; //could keep a pointer in the future if we need to use global_schedule, i.e. fault tolerance or if global_schedule needs to be dynamically changed?
     uint16_t global_schedule_length;
     uint16_t local_schedule_length;
     uint16_t local_schedule_index;
     uint32_t slot_duration;
     uint32_t timing_offset;
+    int slot_duration_offset;
 
     // Callback functions
     transmit_frame_callback_fp_t transmit_frame_callback_fp;
@@ -77,6 +79,16 @@ typedef struct gttcan_tag
 
     // Timing related
     uint32_t last_schedule_transmission_time;
+    bool has_adjusted_slots_this_round;
+
+    bool reached_end_of_my_schedule_prematurely;
+
+
+    // Cascading master
+    uint8_t last_lowest_seen_node_id;
+    uint8_t current_lowest_seen_node_id;
+    bool isTimeMaster;
+    bool has_received;
 
 } gttcan_t;
 
