@@ -112,15 +112,6 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         gttcan->transmit_frame_callback_fp(ext_frame_header, ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id);
     }
 
-    if(gttcan->local_schedule_index == 0 && !gttcan->isTimeMaster){
-        if (gttcan->slot_duration_offset > 0){
-            gttcan->slot_duration++;
-        }
-        if (gttcan->slot_duration_offset < 0) {
-            gttcan->slot_duration--;
-        }
-    }
-
     if (gttcan->node_id < gttcan->current_lowest_seen_node_id || gttcan->current_lowest_seen_node_id == 0){
         gttcan->current_lowest_seen_node_id = gttcan->node_id;
     }
@@ -175,6 +166,14 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
         gttcan->reached_end_of_my_schedule_prematurely = false;
+        if(gttcan->local_schedule_index == 0 && !gttcan->isTimeMaster){
+            if (gttcan->slot_duration_offset > 0){
+                gttcan->slot_duration++;
+            }
+            if (gttcan->slot_duration_offset < 0) {
+                gttcan->slot_duration--;
+            }
+        }
         gttcan->slot_duration_offset = 0;
         int32_t time_difference = 0;
 
