@@ -125,7 +125,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         }
     }
 
-    bool is_from_master = rx_node_id == gttcan->last_lowest_seen_node_id;
+    bool is_from_master = (rx_node_id == gttcan->last_lowest_seen_node_id) && (rx_node_id == gttcan->current_lowest_seen_node_id);
 
     if ((is_from_master || gttcan->rounds_without_shuffling_against_master >= NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST) &&
         slot_id > gttcan->local_schedule[gttcan->local_schedule_index].slot_id &&   // If received frame is after my next frame, AND
@@ -169,7 +169,9 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             {
                 gttcan->slot_duration--;
             }
-            if (gttcan->slot_duration_offset == 0 && gttcan->rounds_without_shuffling_against_master < NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST){
+            if (
+                gttcan->slot_duration_offset == 0 && 
+                gttcan->rounds_without_shuffling_against_master < NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST){
                 gttcan->rounds_without_shuffling_against_master++;
             }
         }
