@@ -7,11 +7,11 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 125
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
 #endif
 
 #ifndef MAX_GLOBAL_SCHEDULE_LENGTH
-#define MAX_GLOBAL_SCHEDULE_LENGTH 125
+#define MAX_GLOBAL_SCHEDULE_LENGTH 512
 #endif
 
 /* REQUIREMENT
@@ -98,7 +98,6 @@ typedef struct gttcan_tag
     uint8_t last_lowest_seen_node_id;
     uint8_t current_lowest_seen_node_id;
     bool is_time_master;
-    bool has_received;
 
 } gttcan_t;
 

@@ -35,14 +35,12 @@ void gttcan_init(
 
     gttcan->last_lowest_seen_node_id = 0;
     gttcan->current_lowest_seen_node_id = 0;
-    gttcan->has_received = false;
 
     gttcan->rounds_without_shuffling_against_master = 0;
 }
 
 void gttcan_start(gttcan_t *gttcan)
 {
-    gttcan->has_received = false;
     gttcan->is_active = true;
     gttcan->local_schedule_index = 0;
     gttcan->is_time_master = false;
@@ -82,18 +80,9 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
 
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
-
-    int isTIMEMASTER;
-    if (gttcan->is_time_master == true){
-        isTIMEMASTER = 1;
-    } else {
-        isTIMEMASTER = 3;
-    }
-
     uint32_t ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id;
-uint64_t data_payload = (uint64_t)gttcan->node_id |             // 8 bits (lowest byte)
-                       ((uint64_t)isTIMEMASTER << 8) |          // 1 bit at position 8
-                       ((uint64_t)gttcan->slot_duration << 16);
+    uint64_t data_payload = ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id; // TODO: Reads real data, not dummy
+
     if (data_id != REFERENCE_FRAME_DATA_ID || gttcan->is_time_master)
     {
         gttcan->transmit_frame_callback_fp(ext_frame_header, data_payload); 
@@ -110,11 +99,6 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
     if (!gttcan->is_initialised)
     {
         return;
-    }
-
-    if (!gttcan->has_received)
-    {
-        gttcan->has_received = true;
     }
 
     uint16_t slot_id = can_frame_id >> GTTCAN_NUM_DATA_ID_BITS;
