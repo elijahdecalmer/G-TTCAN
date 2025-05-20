@@ -42,6 +42,10 @@
 #define DEFAULT_STARTUP_PAUSE_SLOTS 2
 #endif
 
+#ifndef NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST
+#define NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST 2
+#endif
+
 typedef struct local_schedule_entry_tag
 {
     uint16_t slot_id;

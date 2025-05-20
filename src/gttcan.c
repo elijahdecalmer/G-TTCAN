@@ -127,7 +127,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 
     bool is_from_master = rx_node_id == gttcan->last_lowest_seen_node_id;
 
-    if ((is_from_master || gttcan->rounds_without_shuffling_against_master > 2) &&
+    if ((is_from_master || gttcan->rounds_without_shuffling_against_master >= NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST) &&
         slot_id > gttcan->local_schedule[gttcan->local_schedule_index].slot_id &&   // If received frame is after my next frame, AND
         gttcan->local_schedule_index > 0 &&                                         // I have transmitted, AND
         !gttcan->reached_end_of_my_schedule_prematurely                             // I haven't already wrapped in this round
@@ -138,7 +138,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         }
     }
 
-    if ((is_from_master || gttcan->rounds_without_shuffling_against_master > 2) &&
+    if ((is_from_master || gttcan->rounds_without_shuffling_against_master >= NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST) &&
         slot_id < gttcan->local_schedule[gttcan->local_schedule_index - 1].slot_id && // If received frame is before my previous, AND
         gttcan->local_schedule_index > 0 &&                                           // I have transmitted, AND
         !gttcan->reached_end_of_my_schedule_prematurely &&                            // I haven't already wrapped in this round, AND
@@ -169,7 +169,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
             {
                 gttcan->slot_duration--;
             }
-            if (gttcan->slot_duration_offset == 0 && gttcan->rounds_without_shuffling_against_master < 3){
+            if (gttcan->slot_duration_offset == 0 && gttcan->rounds_without_shuffling_against_master < NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST){
                 gttcan->rounds_without_shuffling_against_master++;
             }
         }
@@ -181,7 +181,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         {
             if (gttcan->local_schedule[i].slot_id > slot_id)
             {
-                if ((is_from_master || gttcan->rounds_without_shuffling_against_master > 2) &&
+                if ((is_from_master || gttcan->rounds_without_shuffling_against_master >= NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST) &&
                     !gttcan->reached_end_of_my_schedule_prematurely &&
                     ((gttcan->local_schedule_index < i) ||              // (If I am behind schedule, OR
                     (i == 0 && gttcan->local_schedule_index))           // I didn't complete my schedule)
@@ -201,7 +201,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         if (!found_next_index)
         {
             // No slot is greater than the reference slot
-            if ((is_from_master || gttcan->rounds_without_shuffling_against_master > 2) &&
+            if ((is_from_master || gttcan->rounds_without_shuffling_against_master >= NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST) &&
                 gttcan->local_schedule_index != 0 && !gttcan->reached_end_of_my_schedule_prematurely)
             {
                 gttcan->slot_duration_offset--; // Needs a speedup, as I never got to transmit my final frame
