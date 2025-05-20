@@ -7,11 +7,11 @@
 
 /* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
-#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
+#define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 125
 #endif
 
 #ifndef MAX_GLOBAL_SCHEDULE_LENGTH
-#define MAX_GLOBAL_SCHEDULE_LENGTH 512
+#define MAX_GLOBAL_SCHEDULE_LENGTH 125
 #endif
 
 /* REQUIREMENT

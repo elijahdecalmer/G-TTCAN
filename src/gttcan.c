@@ -133,6 +133,9 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         !gttcan->reached_end_of_my_schedule_prematurely                             // I haven't already wrapped in this round
     ) {
         gttcan->slot_duration_offset--; // I am slow, speed up
+        if (is_from_master){
+            gttcan->rounds_without_shuffling_against_master = 0;
+        }
     }
 
     if ((is_from_master || gttcan->rounds_without_shuffling_against_master > 2) &&
@@ -142,6 +145,9 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         slot_id != 0                                                                  // received frame isn't at start of schedule
     ) {
         gttcan->slot_duration_offset++; // I am fast, slow down
+        if (is_from_master){
+            gttcan->rounds_without_shuffling_against_master = 0;
+        }
     }
 
     if (!gttcan->is_active && slot_id == 0)
@@ -181,6 +187,9 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
                     (i == 0 && gttcan->local_schedule_index))           // I didn't complete my schedule)
                 ) {
                     gttcan->slot_duration_offset--; // speeding up
+                    if (is_from_master){
+                        gttcan->rounds_without_shuffling_against_master = 0;
+                    }
                 }
                 gttcan->local_schedule_index = i;
 
@@ -196,6 +205,9 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
                 gttcan->local_schedule_index != 0 && !gttcan->reached_end_of_my_schedule_prematurely)
             {
                 gttcan->slot_duration_offset--; // Needs a speedup, as I never got to transmit my final frame
+                if (is_from_master){
+                    gttcan->rounds_without_shuffling_against_master = 0;
+                }
             }
             gttcan->local_schedule_index = 0;
         }
