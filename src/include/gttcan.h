@@ -88,6 +88,7 @@ typedef struct gttcan_tag
     // Shuffle correction
     bool reached_end_of_my_schedule_prematurely;
     int slot_duration_offset;
+    int rounds_without_shuffling_against_master;
 
     // Cascading master
     uint8_t last_lowest_seen_node_id;
