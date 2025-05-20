@@ -81,7 +81,15 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
     gttcan->set_timer_int_callback_fp(time_to_next_transmission);
 
     uint32_t ext_frame_header = ((uint32_t)slot_id << GTTCAN_NUM_DATA_ID_BITS) | data_id;
-    uint64_t data_payload = ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id; // TODO: Reads real data, not dummy
+
+    int ISTIMEMASTER;
+    if (gttcan->is_time_master){
+        ISTIMEMASTER = 1;
+    } else {
+        ISTIMEMASTER = 3;
+    }
+
+    uint64_t data_payload = ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id | (uint64_t)ISTIMEMASTER << 60; // TODO: Reads real data, not dummy
 
     if (data_id != REFERENCE_FRAME_DATA_ID || gttcan->is_time_master)
     {
@@ -146,7 +154,7 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
 
     if (data_id == REFERENCE_FRAME_DATA_ID)
     {
-        gttcan->reached_end_of_my_schedule_prematurely = false;
+        
         if (slot_id == 0 && !gttcan->is_time_master)
         {
             if (gttcan->slot_duration_offset > 0)
@@ -163,8 +171,10 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
                 gttcan->rounds_without_shuffling_against_master < NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST){
                 gttcan->rounds_without_shuffling_against_master++;
             }
+            gttcan->slot_duration_offset = 0;
+            gttcan->reached_end_of_my_schedule_prematurely = false;
+
         }
-        gttcan->slot_duration_offset = 0;
 
         bool found_next_index = false;
         // Find the first local schedule entry where its slot_id > ref slot_id
