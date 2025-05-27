@@ -90,6 +90,7 @@ typedef struct gttcan_tag
     write_value_fp_t write_value_fp;
 
     // Shuffle correction
+    bool dynamic_slot_duration_correction;
     bool reached_end_of_my_schedule_prematurely;
     int slot_duration_offset;
     int rounds_without_shuffling_against_master;
