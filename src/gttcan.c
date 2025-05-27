@@ -11,7 +11,8 @@ void gttcan_init(
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp
+    write_value_fp_t write_value_fp,
+    bool dynamic_slot_duration_correction
 ) {
     gttcan->is_active = false;
     gttcan->node_id = node_id;
@@ -37,6 +38,7 @@ void gttcan_init(
     gttcan->current_lowest_seen_node_id = 0;
 
     gttcan->rounds_without_shuffling_against_master = 0;
+    gttcan->dynamic_slot_duration_correction = dynamic_slot_duration_correction;
 }
 
 void gttcan_start(gttcan_t *gttcan)
@@ -157,12 +159,12 @@ void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data
         
         if (slot_id == 0 && !gttcan->is_time_master)
         {
-            if (gttcan->slot_duration_offset > 0)
+            if (gttcan->dynamic_slot_duration_correction && gttcan->slot_duration_offset > 0)
             {
                 gttcan->slot_duration++;
 
             }
-            if (gttcan->slot_duration_offset < 0)
+            if (gttcan->dynamic_slot_duration_correction && gttcan->slot_duration_offset < 0)
             {
                 gttcan->slot_duration--;
             }

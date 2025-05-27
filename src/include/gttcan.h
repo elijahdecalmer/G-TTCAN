@@ -111,7 +111,9 @@ void gttcan_init(
     transmit_frame_callback_fp_t transmit_frame_callback_fp,
     set_timer_int_callback_fp_t set_timer_int_callback_fp,
     read_value_fp_t read_value_fp,
-    write_value_fp_t write_value_fp);
+    write_value_fp_t write_value_fp,
+    bool dynamic_slot_duration_correction
+);
 
 void gttcan_start(gttcan_t *gttcan);
 
