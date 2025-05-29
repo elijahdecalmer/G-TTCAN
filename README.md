@@ -16,7 +16,7 @@ If a node is the only node on the network, it will decide to be the master. Othe
 
 #### Related Protocols
 
-G-TTCAN draws inspiration from several well-established and proven CAN-based protocols including [CANopen](https://www.can-cia.org/canopen/), [CANKingdom](https://www.can-cia.org/cankingdom/), and [TTCAN (Time-Triggered CAN)](https://www.bosch-semiconductors.com/ip-modules/can-ip-modules/ttcan-ip/). These mature protocols have demonstrated excellence in their respective domains - from industrial automation and distributed control systems to automotive and safety-critical applications. Building upon the solid foundations established by these protocols, our implementation aims to provide a lightweight, hardware-agnostic, and open-source alternative that focuses on simplicity and low resource overhead while maintaining the core benefits of time-triggered communication.
+G-TTCAN draws inspiration from several well-established and proven CAN-based protocols including [CANopen](https://en.wikipedia.org/wiki/CANopen), [CANKingdom](https://kvaser.com/wp-content/uploads/2014/02/ck301p.pdf), and [TTCAN (Time-Triggered CAN)](https://www.canlab.cz/sites/default/files/pages/download/CAN%20Network%20with%20Time%20Triggered%20Communication.pdf). These mature protocols have demonstrated excellence in their respective domains - from industrial automation and distributed control systems to automotive and safety-critical applications. Building upon the solid foundations established by these protocols, our implementation aims to provide a lightweight, hardware-agnostic, and open-source alternative that focuses on simplicity and low resource overhead while maintaining the core benefits of time-triggered communication.
 
 #### Key Concepts
 
