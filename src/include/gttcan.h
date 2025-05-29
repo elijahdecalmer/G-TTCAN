@@ -5,10 +5,28 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH must fit into a uint8_t, so be less than or equal to 255 */ // is this a necessary restriction?
+/**
+ * @brief Maximum number of entries in a node's local transmission schedule
+ * 
+ * Defines the size of the local schedule array that stores slot/data ID pairs
+ * for frames this node will transmit. Each entry represents one scheduled
+ * transmission opportunity within the global transmission cycle.
+ */
 #ifndef GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH
 #define GTTCAN_MAX_LOCAL_SCHEDULE_LENGTH 512
 #endif
+
+/**
+ * @brief Maximum number of entries in the global schedule
+ * 
+ * Defines the total number of time slots in the global schedule that coordinates
+ * all nodes in the G-TTCAN network. This represents the complete schedule cycle
+ * length before it repeats.
+ * 
+ * @note Larger values allow more nodes or more frequent transmissions but increase
+ * cycle time. 
+ * @note Must accommodate all nodes' transmission needs.
+ */
 
 #ifndef MAX_GLOBAL_SCHEDULE_LENGTH
 #define MAX_GLOBAL_SCHEDULE_LENGTH 512
@@ -18,30 +36,100 @@
  GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
  This value limits the size of global schedule.
 */
+
+/**
+ * @brief Number of bits allocated for slot ID in CAN frame identifier
+ * 
+ * Determines the maximum number of time slots in the global schedule.
+ * Slot ID is embedded in the upper bits of the 29-bit extended CAN ID.
+ * 
+ * Maximum slots = 2^GTTCAN_NUM_SLOT_ID_BITS
+ * With 13 bits: up to 8192 slots possible
+ * 
+ * CONSTRAINT: GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
+ * (Must fit within extended CAN frame ID)
+ */
 #ifndef GTTCAN_NUM_SLOT_ID_BITS
 #define GTTCAN_NUM_SLOT_ID_BITS 13
 #endif
 
-/* REQUIREMENT
- GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
- This value limits the number of whiteboard entries.
+/**
+ * @brief Number of bits allocated for data ID in CAN frame identifier
+ * 
+ * Determines the maximum number of different data types/messages that can
+ * be distinguished within each time slot. Data ID is embedded in the lower
+ * bits of the 29-bit extended CAN ID.
+ * 
+ * Maximum data IDs = 2^GTTCAN_NUM_DATA_ID_BITS
+ * With 16 bits: up to 65536 different data types possible
+ * 
+ * CONSTRAINT: GTTCAN_NUM_SLOT_ID_BITS + GTTCAN_NUM_DATA_ID_BITS <= 29
+ * (Must fit within extended CAN frame ID)
  */
 #ifndef GTTCAN_NUM_DATA_ID_BITS
 #define GTTCAN_NUM_DATA_ID_BITS 16
 #endif
 
+
+/**
+ * @brief Data ID reserved for reference/synchronization frames
+ * 
+ * Special data ID used for frames that provide timing reference and
+ * synchronization information to maintain global time alignment across
+ * all nodes in the G-TTCAN network.
+ * 
+ * @note These frames are critical for GTTCAN operation
+ */
 #ifndef REFERENCE_FRAME_DATA_ID
 #define REFERENCE_FRAME_DATA_ID 0
 #endif
 
+
+/**
+ * @brief Data ID for general-purpose data frames
+ * 
+ * Default data ID used for standard application data that doesn't require
+ * special handling or synchronization properties. Can be used as a fallback
+ * or default value when specific data typing isn't needed.
+ * @note This data ID only serves as an example, the user should define their own
+ * data IDs to fit their usage scenarios
+ */
 #ifndef GENERIC_DATA_ID
 #define GENERIC_DATA_ID 1
 #endif
 
+
+/**
+ * @brief Number of time slots to pause during network startup
+ * 
+ * When a node first joins the G-TTCAN network or after a reset, it waits
+ * this many slots before beginning normal transmission. This node specific 
+ * startup delay allows the node to:
+ * - Synchronize with the global time reference (if exists)
+ * - Learn the current schedule state (if exists)
+ * - Avoid collisions during initialization
+ * 
+ * @note Too small: risk of startup collisions
+ * @note Too large: delayed network participation
+ */
 #ifndef DEFAULT_STARTUP_PAUSE_SLOTS
 #define DEFAULT_STARTUP_PAUSE_SLOTS 2
 #endif
 
+
+
+/**
+ * @brief Threshold for switching to all-node synchronization adjustment
+ * 
+ * Number of schedule rounds (complete schedule cycles) to wait before changing
+ * from individual node time adjustment to system-wide synchronization mode.
+ * 
+ * This allows individual nodes to initially adjust their local timing from the time 
+ * master, then switches to a mode where the nodes aligns itself based off every node
+ * for better overall network synchronization stability.
+ * 
+ * Affects convergence time vs. stability trade-off in time synchronization.
+ */
 #ifndef NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST
 #define NUM_ROUNDS_BEFORE_SWITCHING_TO_ALL_NODE_ADJUST 2
 #endif
