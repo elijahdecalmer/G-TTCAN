@@ -230,7 +230,8 @@ typedef void (*set_timer_int_callback_fp_t)(uint32_t);
  * @return 64-bit data value to be transmitted in the CAN frame payload
  * 
  * @note Called from interrupt context in gttcan_transmit_next_frame()
- * @note Should be fast and non-blocking to maintain timing accuracy, so where possible read from memory or registers directly instead of performing I/O operations
+ * @note Should be fast and non-blocking to maintain timing accuracy, so where possible read 
+ *          from memory or registers directly instead of performing I/O operations
  * @note Return value will be transmitted exactly as returned (no formatting by G-TTCAN)
  * @note May be called multiple times for the same data_id if node has multiple slots
  * @note Should handle unknown data_id values gracefully (return 0 or error value)
