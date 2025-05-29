@@ -29,7 +29,9 @@
  * @note The global_schedule_ptr must remain valid for the lifetime of the gttcan instance
  * @note All callback functions must be implemented and functional before calling gttcan_start()
  * @note The slot_duration must be set to a value that is suitable for the network and hardware
- *          capabilities, and must be larger than the time it takes for transmission of a can frame. Reccomended slot duration is AT LEAST 1.5 times the time it takes to transmit a CAN frame, to allow for processing time and some margin for error.
+ *          capabilities, and must be larger than the time it takes for transmission of a can frame.
+ *          Reccomended slot duration is AT LEAST 1.5 times the time it takes to transmit a CAN frame, 
+ *          to allow for processing time and some margin for error.
  * 
  */
 void gttcan_init(
@@ -355,8 +357,7 @@ void gttcan_get_local_schedule(gttcan_t *gttcan, global_schedule_ptr_t global_sc
  * 
  * @return Number of slots to advance from current to next position
  * 
- * @note Pure function with no side effects
- * @note Handles schedule wraparound correctly (e.g., slot 10 to slot 2 in 12-slot schedule = 4 slots)
+ * @note Handles schedule wraparound (e.g., slot 10 to slot 2 in 12-slot schedule = 4 slots)
  * @note Used internally for timing calculations
  */
 uint16_t gttcan_get_number_of_slots_to_next(uint16_t current_slot_id, uint16_t next_slot_id, uint16_t global_schedule_length)
