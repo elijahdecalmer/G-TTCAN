@@ -13,17 +13,23 @@
  * @param global_schedule_ptr Pointer to array of global_schedule_entry_t defining network-wide schedule
  * @param global_schedule_length Number of entries in the global schedule array
  * @param slot_duration Duration of each time slot in system time units
- * @param interrupt_timing_offset Time offset applied before transmission to compensate for processing delays. This should be equal to the time taken between two points A and B; A) the calling of process_frame() with a received reference frame, and B) the subsequent calling of set_timer_int_callback_fp (specifically the line that sets your interrupt timer).
+ * @param interrupt_timing_offset Time offset applied before transmission to compensate for processing delays.
+ *          This should be equal to the time taken between two points A and B; A) the calling of process_frame() with a
+ *          received reference frame, and B) the subsequent calling of set_timer_int_callback_fp (specifically the line
+ *          that sets your interrupt timer).
  * @param transmit_frame_callback_fp Function pointer for CAN frame transmission (see transmit_frame_callback_fp_t)
  * @param set_timer_int_callback_fp Function pointer for timer interrupt setup (see set_timer_int_callback_fp_t)
  * @param read_value_fp Function pointer for reading data values (see read_value_fp_t)
  * @param write_value_fp Function pointer for writing received data (see write_value_fp_t)
- * @param dynamic_slot_duration_correction Enable automatic slot duration adjustment for timing corrections. Disable for more deterministic behavior, enable for dynamic adjustment to account for clock frequency variations between nodes, or over time.
+ * @param dynamic_slot_duration_correction Enable automatic slot duration adjustment for
+ *          timing corrections. Disable for more deterministic behavior, enable for dynamic adjustment
+ *          to account for clock frequency variations between nodes, or over time.
  * 
  * @note Node ID must be unique across the network and cannot be 0.
  * @note The global_schedule_ptr must remain valid for the lifetime of the gttcan instance
  * @note All callback functions must be implemented and functional before calling gttcan_start()
- * @note The slot_duration must be set to a value that is suitable for the network and hardware capabilities, and must be larger than the time it takes for transmission of a can frame. Reccomended slot duration is AT LEAST 1.5 times the time it takes to transmit a CAN frame, to allow for processing time and some margin for error.
+ * @note The slot_duration must be set to a value that is suitable for the network and hardware
+ *          capabilities, and must be larger than the time it takes for transmission of a can frame. Reccomended slot duration is AT LEAST 1.5 times the time it takes to transmit a CAN frame, to allow for processing time and some margin for error.
  * 
  */
 void gttcan_init(
@@ -77,7 +83,9 @@ void gttcan_init(
  * @param gttcan Pointer to initialized gttcan_t structure
  * 
  * @note gttcan_init() must be called successfully before this function
- * @note Startup delay is calculated as: (global_schedule_length + (node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * slot_duration to stagger the start of the node's transmission
+ * @note Startup delay is calculated as:
+ *          (global_schedule_length + (node_id * DEFAULT_STARTUP_PAUSE_SLOTS)) * slot_duration
+ *          to stagger the start of the node's transmission
  * @note After startup delay, the node will begin transmitting according to its local schedule
  */
 void gttcan_start(gttcan_t *gttcan)
@@ -174,7 +182,8 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
  * @note Data frames are passed to write_value_fp callback for application processing
  * @note Implements dynamic timing correction based on received frame timing (if dynamic_slot_duration_correction is enabled)
  * @note Updates master election by tracking lowest node IDs seen in consecutive rounds
- * @note If the node is not initialized, this function does nothing. This is to prevent processing frames before the G-TTCAN instance is fully set up, if the interrupt handler fires before gttcan_start() is called.
+ * @note If the node is not initialized, this function does nothing. This is to prevent 
+ *          processing frames before the G-TTCAN instance is fully set up, if the interrupt handler fires before gttcan_start() is called.
  */
 void gttcan_process_frame(gttcan_t *gttcan, uint32_t can_frame_id, uint64_t data)
 {
