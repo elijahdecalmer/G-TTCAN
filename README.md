@@ -14,11 +14,15 @@ In a standard CAN Bus implementation, nodes can transmit ad hoc, and priority ba
 
 If a node is the only node on the network, it will decide to be the master. Otherwise, the node with the lowest node id that transmits in the schedule will be the master for the next round, and so on. The master sends a reference frame at the start of schedule, and at any other points in the schedule where a reference frame is defined. Upon receiving these reference frames, all other nodes synchronise their positions in their local schedule and their timers to be aligned with the reference frame received. Thus, the entire network resynchronises every time a reference frame is sent. Nodes transmit upon an internal timer interrupt which was set either: a) upon receiving a reference frame OR b) upon their transmitting the previous frame in their schedule.
 
+#### Related Protocols
+
+G-TTCAN draws inspiration from several well-established and proven CAN-based protocols including [CANopen](https://www.can-cia.org/canopen/), [CANKingdom](https://www.can-cia.org/cankingdom/), and [TTCAN (Time-Triggered CAN)](https://www.bosch-semiconductors.com/ip-modules/can-ip-modules/ttcan-ip/). These mature protocols have demonstrated excellence in their respective domains - from industrial automation and distributed control systems to automotive and safety-critical applications. Building upon the solid foundations established by these protocols, our implementation aims to provide a lightweight, hardware-agnostic, and open-source alternative that focuses on simplicity and low resource overhead while maintaining the core benefits of time-triggered communication.
+
 #### Key Concepts
 
 **Time-Triggered Communication**
 
-GTTCAN operates on a time-triggered paradigm where communication occurs according to a predetermined schedule rather than in response to events.
+G-TTCAN operates on a time-triggered paradigm where communication occurs according to a predetermined schedule rather than in response to events.
 
 **Master Selection**
 
@@ -28,16 +32,19 @@ If a node is the only one on the network, it becomes the master. Otherwise, the 
 
 A global schedule defines the transmission sequence for all nodes.
 Each node maintains a local schedule with only its own transmission slots and reference slots.
-Nodes synchronize based on reference frames sent by the master.
+Nodes synchronise based on reference frames sent by the master.
 
-**Synchronization**
+**Synchronisation**
 
 The master sends reference frames at designated points in the schedule.
-Upon receiving a reference frame, nodes synchronize their position in their schedule.
-Upon receiving a reference frame, nodes recalculate their next time to transmit, and overwrite their relevant timer to trigger an interrupt in this amount of time.
+Upon receiving a reference frame:
+
+- nodes synchronise their position in their schedule.
+- nodes recalculate their next time to transmit, and overwrite their relevant timer to trigger an interrupt in this amount of time.
 
 **System Time Units**
-System Time Units (STU) are the fundamental timing unit used throughout G-TTCAN for all time-related parameters and calculations. All G-TTCAN timing parameters - including slot_duration, interrupt_timing_offset, and timer delays - must use the same units as your hardware timer. When you specify a slot_duration of 300 STU and G-TTCAN later calls your timer callback with a delay of 600 STU, both values must be in identical units that your timer can directly understand without conversion. Whether STU represents microseconds, milliseconds, timer ticks, or any other unit doesn't matter to G-TTCAN, but this unit must be consistent between your timing configuration and timer implementation across all nodes in the network.
+
+System Time Units (STU) are the fundamental timing unit used throughout G-TTCAN for all time-related parameters and calculations. All G-TTCAN timing parameters - including `slot_duration`, `interrupt_timing_offset`, and timer delays - must use the same units as your hardware timer. When you specify a slot_duration of 300 STU and G-TTCAN later calls your timer callback with a delay of 600 STU, both values must be in identical units that your timer can directly understand without conversion. Whether STU represents microseconds, milliseconds, timer ticks, or any other unit doesn't matter to G-TTCAN, but this unit must be consistent between your timing configuration and timer implementation across all nodes in the network.
 
 **CAN Frame Extended ID**
 
