@@ -4,13 +4,15 @@ A lightweight, time-triggered communication **protocol** for communication betwe
 
 This repo serves as a platform agnostic implementation of the protocol written in C with a focus on simplicity, low resource overhead and low communication overhead.
 
-DISCLAIMER: This protocol is a work in progress, and is currently not guaranteed in any capacity around reliability, deterministic timing, fault tolerance, resource usage, etc. All testing should be
+**DISCLAIMER:**
+
+**This protocol is a work in progress and is provided "as-is" without any warranties or guarantees.** G-TTCAN is currently experimental and not suitable for production use, safety-critical applications, or systems where reliability is essential. The protocol does not guarantee deterministic timing, fault tolerance, data integrity, or consistent performance across different hardware platforms or network conditions. Users should thoroughly test and validate the implementation in their specific environment before any deployment. The authors assume no responsibility for any damage, data loss, system failures, or other consequences resulting from the use of this protocol. Use at your own risk and discretion.
 
 #### Overview
 
 In a standard CAN Bus implementation, nodes can transmit ad hoc, and priority based arbitration resolves communication conflicts when they occur. In G-TTCAN, a predefined schedule determines which node transmits, and what data they should transmit, for each slot in the schedule.
 
-If a node is the only node on the network, it will decide to be the master. Otherwise, the node with the lowest node id that transmits in the schedule will be the master for the next round, and so on. The master sends a reference frame at the start of schedule, and at any other points in the schedule where a reference frame is defined. Upon receiving these reference frames, all other nodes synchronise their positions in their local schedule and their timers to be aligned with the reference frame received. Thus, the entire network resynchronises every time a reference frame is sent. Nodes transmit upon an internal timer interrupt which was set either: a) upon receiving a reference frame OR b) upon their trasmitting the previous frame in their schedule.
+If a node is the only node on the network, it will decide to be the master. Otherwise, the node with the lowest node id that transmits in the schedule will be the master for the next round, and so on. The master sends a reference frame at the start of schedule, and at any other points in the schedule where a reference frame is defined. Upon receiving these reference frames, all other nodes synchronise their positions in their local schedule and their timers to be aligned with the reference frame received. Thus, the entire network resynchronises every time a reference frame is sent. Nodes transmit upon an internal timer interrupt which was set either: a) upon receiving a reference frame OR b) upon their transmitting the previous frame in their schedule.
 
 #### Key Concepts
 
@@ -43,6 +45,8 @@ The 29-bit extended CAN frame identifier in G-TTCAN is composed of two fields: t
 
 #### Examples
 
+See the Examples folder in the code repository for hardware-specific example implementations of G-TTCAN.
+
 **Schedule**
 
 ```c
@@ -58,6 +62,16 @@ global_schedule_entry_t global_schedule[MAX_GLOBAL_SCHEDULE_LENGTH] = {
     {1, 7, STATUS_DATA},
 };
 ```
+
+#### Configuration Guidelines
+
+****Slot Duration****
+
+The `slot_duration` parameter defines the time allocated for each entry in the schedule and must be longer than the time required to transmit a CAN frame. The recommended slot duration is at least 1.5 times the CAN frame transmission time to allow for processing overhead and timing margins. For example, if a CAN frame takes 200 microseconds to transmit, set `slot_duration` to at least 300 microseconds.
+
+**Interrupt Timing Offset**
+
+The `interrupt_timing_offset` parameter compensates for processing delays between frame reception/transmission and timer configuration. This value should be measured on each hardware platform by timing from point A (the calling of `gttcan_process_frame()` with a received reference frame) to point B (the execution of the line in your `set_timer_int_callback_fp` implementation that actually sets the interrupt timer). This offset is applied every time G-TTCAN sets a timer to account for the processing time required, ensuring that timer interrupts occur closer to the correct moments relative to the schedule.
 
 #### Requirements
 
