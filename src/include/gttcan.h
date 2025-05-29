@@ -61,9 +61,148 @@ typedef struct global_schedule_entry
 
 typedef global_schedule_entry_t *global_schedule_ptr_t;
 
+/**
+ * @brief Callback function pointer for transmitting CAN frames
+ * 
+ * This function is called by G-TTCAN when it needs to transmit a frame on the CAN bus.
+ * The implementation must handle the actual transmission using the platform's CAN driver.
+ * 
+ * @param can_frame_id 29-bit extended CAN frame identifier to be transmitted
+ *                     Format: [slot_id (GTTCAN_NUM_SLOT_ID_BITS bits) | data_id (GTTCAN_NUM_DATA_ID_BITS bits)]
+ * @param data 64-bit data payload to be transmitted in the CAN frame
+ * 
+ * @note Must be non-blocking or have minimal execution time to avoid timing issues
+ * @note Should handle transmission errors gracefully (e.g., bus-off conditions)
+ * @note Called from interrupt context in gttcan_transmit_next_frame()
+ * @note Frame format must be extended (29-bit identifier) CAN frame
+ * @note Implementation should not modify the parameters
+ * 
+ * Example implementation:
+ * @code
+ * void my_transmit_callback(uint32_t can_id, uint64_t data) {
+ *     can_message_t msg;
+ *     msg.id = can_id;
+ *     msg.extended = true;
+ *     msg.data_length = 8;
+ *     memcpy(msg.data, &data, 8);
+ *     can_transmit(&msg);
+ * }
+ * @endcode
+ */
 typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
+
+/**
+ * @brief Callback function pointer for setting timer interrupts
+ * 
+ * This function is called by G-TTCAN to schedule the next transmission.
+ * The implementation must configure a hardware timer to generate an interrupt
+ * after the specified delay, which should then call gttcan_transmit_next_frame().
+ * 
+ * @param time_in_stu Time delay in system time units until the interrupt should occur
+ *                    Must be > 0; G-TTCAN ensures minimum value of 1
+ * 
+ * @note The interrupt handler must call gttcan_transmit_next_frame() when triggered
+ * @note Should handle timer overflow conditions for large delay values
+ * @note Must be accurate and have low jitter for proper network synchronization
+ * @note Should overwrite any existing timer and set the new delay, rather than queuing multiple interrupts
+ * @note This function is called from the G-TTCAN context, so it should not take long to execute
+ * @note System time units must be consistent across all nodes in the network
+ * 
+ * Example implementation:
+ * @code
+ * void my_timer_callback(uint32_t delay_stu) {
+ *     // Stop existing timer
+ *     timer_stop();
+ *     // Set to zero
+ *     timer_set_value(0); 
+ *     // Set new timer value (convert STU to hardware timer units if needed)
+ *     timer_set_period(delay_stu * STU_TO_TIMER_RATIO);
+ *     // Start timer
+ *     timer_start();
+ * }
+ * 
+ * // In timer interrupt handler:
+ * void timer_isr(void) {
+ *     gttcan_transmit_next_frame(&my_gttcan);
+ * }
+ * @endcode
+ */
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
+
+/**
+ * @brief Callback function pointer for reading data values for transmission
+ * 
+ * This function is called by G-TTCAN when it needs to read data for transmission
+ * in a scheduled slot. The implementation should return the current value associated
+ * with the specified data identifier.
+ * 
+ * @param data_id Data identifier from the global schedule indicating which data to read
+ *                Values are application-specific and defined in the global schedule
+ * 
+ * @return 64-bit data value to be transmitted in the CAN frame payload
+ * 
+ * @note Called from interrupt context in gttcan_transmit_next_frame()
+ * @note Should be fast and non-blocking to maintain timing accuracy, so where possible read from memory or registers directly instead of performing I/O operations
+ * @note Return value will be transmitted exactly as returned (no formatting by G-TTCAN)
+ * @note May be called multiple times for the same data_id if node has multiple slots
+ * @note Should handle unknown data_id values gracefully (return 0 or error value)
+ * 
+ * Example implementation:
+ * @code
+ * uint64_t my_read_callback(uint16_t data_id) {
+ *     switch(data_id) {
+ *         case SENSOR_TEMPERATURE:
+ *             return read_temperature_sensor(); // Reading from a register or memory ideally
+ *         case MOTOR_SPEED:
+ *             return get_motor_rpm(); // Reading from a register or memory ideally
+ *         case STATUS_FLAGS:
+ *             return get_system_status(); // Reading from a register or memory ideally
+ *         default:
+ *             return 0; // Unknown data ID
+ *     }
+ * }
+ * @endcode
+ */
 typedef uint64_t (*read_value_fp_t)(uint16_t);
+
+/**
+ * @brief Callback function pointer for storing received data values
+ * 
+ * This function is called by G-TTCAN when it receives a data frame from another node.
+ * The implementation should store or process the received data according to the
+ * application's requirements.
+ * 
+ * @param data_id Data identifier from the received frame indicating the type of data
+ *                Values are application-specific and defined in the global schedule
+ * @param data 64-bit data value received from the transmitting node
+ * 
+ * @note Called from interrupt context in gttcan_process_frame()
+ * @note Should be fast and non-blocking to maintain timing accuracy
+ * @note May queue data for later processing if complex operations are needed
+ * @note Should handle unknown data_id values gracefully (ignore or log error)
+ * @note Data value is exactly as transmitted (no processing by G-TTCAN)
+ * @note May receive data from multiple nodes with the same data_id
+ * 
+ * Example implementation:
+ * @code
+ * void my_write_callback(uint16_t data_id, uint64_t data) {
+ *     switch(data_id) {
+ *         case SENSOR_TEMPERATURE:
+ *             update_temperature_reading(data);
+ *             break;
+ *         case MOTOR_SPEED:
+ *             update_motor_rpm_display(data);
+ *             break;
+ *         case STATUS_FLAGS:
+ *             process_system_status(data);
+ *             break;
+ *         default:
+ *             // Log unknown data ID or ignore
+ *             break;
+ *     }
+ * }
+ * @endcode
+ */
 typedef void (*write_value_fp_t)(uint16_t, uint64_t);
 
 typedef struct gttcan_tag

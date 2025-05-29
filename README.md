@@ -39,3 +39,14 @@ Upon receiving a reference frame, nodes recalculate their next time to transmit,
 Each device must have a dedicated timer with interrupt capabilities
 Devices must be able to set their timer to interrupt after a specified number of network time units
 All devices must support extended CAN frames and share the same CAN bus
+
+
+
+
+
+
+
+- TALK ABOUT THE HASH DEFINES
+- TALK ABOUT THE STRUCT STYLE and give an example
+- Explain system time units
+- MODIFY READ AnD WRITE DATA TO ACTUALLY BE USED
