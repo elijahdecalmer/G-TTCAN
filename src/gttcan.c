@@ -145,7 +145,7 @@ void gttcan_transmit_next_frame(gttcan_t *gttcan)
         ISTIMEMASTER = 3;
     }
 
-    uint64_t data_payload = ((uint64_t)gttcan->slot_duration << 16) | gttcan->node_id | (uint64_t)ISTIMEMASTER << 60; // TODO: Reads real data, not dummy
+    uint64_t data_payload = gttcan->read_value_fp(data_id);
 
     if (data_id != REFERENCE_FRAME_DATA_ID || gttcan->is_time_master)
     {
