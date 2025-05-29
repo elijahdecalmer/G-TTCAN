@@ -65,7 +65,6 @@ typedef void (*transmit_frame_callback_fp_t)(uint32_t, uint64_t);
 typedef void (*set_timer_int_callback_fp_t)(uint32_t);
 typedef uint64_t (*read_value_fp_t)(uint16_t);
 typedef void (*write_value_fp_t)(uint16_t, uint64_t);
-typedef uint32_t (*get_schedule_transmission_time_fp_t)(void);
 
 typedef struct gttcan_tag
 {
